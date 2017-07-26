@@ -1,5 +1,4 @@
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,11 +11,29 @@
 #include <libsbp/observation.h>
 #include <libsbp/navigation.h>
 #include <libsbp/imu.h>
+#include <modbus/modbus.h>
+#include <modbus/modbus-tcp.h>
+
+#include <errno.h>
+#include "sbp_callback_functions.h"
+
+
 
 char *serial_port_name = NULL;
 struct sp_port *piksi_port = NULL;
+//int s = -1;                           // for modbus testing
+//modbus_t *ctx;                        // for modbus testing
+//modbus_mapping_t *mb_mapping;         // for modbus testing
+
+
 
 static sbp_msg_callbacks_node_t heartbeat_callback_node;
+static sbp_msg_callbacks_node_t base_pos_llh_callback_node;
+static sbp_msg_callbacks_node_t pos_llh_callback_node;
+static sbp_msg_callbacks_node_t baseline_ned_callback_node;
+static sbp_msg_callbacks_node_t gps_time_callback_node;
+static sbp_msg_callbacks_node_t utc_time_callback_node;
+static sbp_msg_callbacks_node_t imu_raw_callback_node;
 
 
 void usage(char *prog_name) {
@@ -57,6 +74,42 @@ void setup_port()
     exit(EXIT_FAILURE);
   }
 }
+/*
+int modbus_server_setup()
+{
+
+
+    ctx = modbus_new_tcp("127.0.0.1", 1502);
+    // modbus_set_debug(ctx, TRUE); 
+
+    mb_mapping = modbus_mapping_new(500, 500, 500, 500);
+    if (mb_mapping == NULL) {
+        fprintf(stderr, "Failed to allocate the mapping: %s\n",
+                modbus_strerror(errno));
+        modbus_free(ctx);
+        return -1;
+    }
+
+    s = modbus_tcp_listen(ctx, 1);
+    modbus_tcp_accept(ctx, &s);
+}
+
+int modbus_server_close()
+{
+  printf("Quit the loop: %s\n", modbus_strerror(errno));
+
+    if (s != -1) {
+        close(s);
+    }
+    modbus_mapping_free(mb_mapping);
+    modbus_close(ctx);
+    modbus_free(ctx);
+
+    return 0;
+}
+
+*/
+
 
 u32 piksi_port_read(u8 *buff, u32 n, void *context)
 {
@@ -68,11 +121,6 @@ u32 piksi_port_read(u8 *buff, u32 n, void *context)
   return result;
 }
 
-void heartbeat_callback(u16 sender_id, u8 len, u8 msg[], void *context)
-{
-  (void)sender_id, (void)len, (void)msg, (void)context;
-  fprintf(stdout, "%s\n", __FUNCTION__);
-}
 
 int main(int argc, char **argv)
 {
@@ -81,15 +129,22 @@ int main(int argc, char **argv)
   int result = 0;
   int intBaudRate = 115200;
   sbp_state_t s;
+  char blnIMUEnabled = 1;
+  char blnUTCTimeEnabled = 1;
+  char blnBasePosEnabled = 1;
+  char blnBaseNEDEnabled = 1;
+  char blnPiksiOutputEnabled=1;
+  
   
   //fprintf(stdout, ".2\n");
   if (argc <= 1) {
     usage(argv[0]);
+    fprintf(stdout, "a\n");
     exit(EXIT_FAILURE);
   }
   //fprintf(stdout, ".3\n");
 
-  while ((opt = getopt(argc, argv, "p:b:")) != -1) 
+  while ((opt = getopt(argc, argv, "p:b:ufin")) != -1) 
   {
     //fprintf(stdout, ".4\n");
     switch (opt) {
@@ -116,6 +171,7 @@ int main(int argc, char **argv)
              { 
                 fprintf(stderr, "invalid baud rate under option -b  %s - expecting a number\n", 
                 optarg?optarg:"");
+                fprintf(stdout, "b\n");
                 usage(argv[0]);
                 exit(EXIT_FAILURE);
              };
@@ -125,9 +181,21 @@ int main(int argc, char **argv)
         //fprintf(stdout, "4\n");
         fprintf(stdout, "baud rate set to %d\n\n", intBaudRate);
         break;
-      case 'h':
+      case 'u': // if parameter is in existence, then disable UTC Time callback function
+        blnUTCTimeEnabled = 0; // disable UTC Time callback function
+        break;
+      case 'f': // if parameter is in existence, then disable base position callback function
+        blnBasePosEnabled = 0; // disable base position callback function
+        break;
+      case 'i': // if parameter is in existence, then disable IMU callback function
+        blnIMUEnabled = 0; // disable IMU callback function
+        break;
+      case 'n': // if parameter is in existence, then disable baseline rover NED callback function
+        blnBaseNEDEnabled = 0; // disable disable baseline rover NED callback function
+        break;
+      /*case 'h':
         usage(argv[0]);
-        exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);*/
     }
   }
 
@@ -153,9 +221,95 @@ int main(int argc, char **argv)
 
   sbp_state_init(&s);
 
+  if (blnPiksiOutputEnabled) {
   sbp_register_callback(&s, SBP_MSG_HEARTBEAT, &heartbeat_callback, NULL,
                         &heartbeat_callback_node);
+  }
+
+  if ((blnPiksiOutputEnabled) || (blnBasePosEnabled)) {
+  sbp_register_callback(&s, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, NULL,
+                        &base_pos_llh_callback_node);
+  }
+
+  if (blnPiksiOutputEnabled) {
+  sbp_register_callback(&s, SBP_MSG_POS_LLH, &pos_llh_callback, NULL,
+                        &pos_llh_callback_node);
+  }
+
+  if ((blnPiksiOutputEnabled) || (blnBaseNEDEnabled)) {
+    sbp_register_callback(&s, SBP_MSG_BASELINE_NED, &baseline_ned_callback, NULL,
+                          &baseline_ned_callback_node);
+  }
+
+  if (blnPiksiOutputEnabled) {
+  sbp_register_callback(&s, SBP_MSG_GPS_TIME, &gps_time_callback, NULL,
+                        &gps_time_callback_node);
+  }
+						
+  if ((blnPiksiOutputEnabled) || (blnUTCTimeEnabled)) {
+  sbp_register_callback(&s, SBP_MSG_UTC_TIME, &utc_time_callback, NULL,
+                        &utc_time_callback_node);
+  }
+
+  if ((blnPiksiOutputEnabled) || (blnIMUEnabled)) {
+    sbp_register_callback(&s, SBP_MSG_IMU_RAW, &imu_raw_callback, NULL,
+                          &imu_raw_callback_node);
+  }
+/*
+  modbus_server_setup();
   
+  fprintf(stdout, "\n\nmodbus_server is up and running\n\n");
+  
+  modbus_server_close();
+  */
+  
+  //******************************************************************************************************************************************************
+  int se = -1;
+    modbus_t *ctx;
+    modbus_mapping_t *mb_mapping;
+
+    ctx = modbus_new_tcp("127.0.0.1", 1502);
+    /* modbus_set_debug(ctx, TRUE); */
+
+    mb_mapping = modbus_mapping_new(500, 500, 500, 500);
+    if (mb_mapping == NULL) {
+        fprintf(stderr, "Failed to allocate the mapping: %s\n",
+                modbus_strerror(errno));
+        modbus_free(ctx);
+        return -1;
+    }
+
+    se = modbus_tcp_listen(ctx, 1);
+    modbus_tcp_accept(ctx, &se);
+
+    for (;;) {
+        uint8_t query[MODBUS_TCP_MAX_ADU_LENGTH];
+        int rc;
+
+        rc = modbus_receive(ctx, query);
+        if (rc > 0) {
+            /* rc is the query size */
+            modbus_reply(ctx, query, rc, mb_mapping);
+        } else if (rc == -1) {
+            /* Connection closed by the client or error */
+            break;
+        }
+    }
+
+    printf("Quit the loop: %s\n", modbus_strerror(errno));
+
+    if (se != -1) {
+        close(se);
+    }
+    modbus_mapping_free(mb_mapping);
+    modbus_close(ctx);
+    modbus_free(ctx);
+
+  
+  
+  
+  
+  //******************************************************************************************************************************************************
   while(1) {
     sbp_process(&s, &piksi_port_read);
   }
