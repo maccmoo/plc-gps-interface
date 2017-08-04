@@ -17,4 +17,4 @@ include_directories(${LIBSERIALPORT_INCLUDE_DIRS})
 link_directories("/usr/local/lib/")
 include_directories("/usr/local/include/")
 
-target_link_libraries(plc-gps-interface serialport sbp)
+target_link_libraries(plc-gps-interface serialport sbp modbus)
