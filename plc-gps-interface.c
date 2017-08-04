@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+//#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -17,15 +18,28 @@
 #include <errno.h>
 #include "sbp_callback_functions.h"
 
+typedef struct {
+  // see definition of SBP protocol at https://github.com/swift-nav/libsbp/blob/master/docs/sbp.pdf
+
+  // populated from SBP message MSG_GPS_TIME
+  uint16_t weeks; // # of weeks since unix epoch MSG_GPS_TIME
+  uint32_t tow; // time of week. 
+  int ns_residual; // residual nanoseconds for precise time
+
+  // populated from SBP message MSG_BASELINE_NED
+  int x; // baseline North coordinate
+  int y; // baseline East coordinate
+  int z; // baseline Down coordinate
+  unsigned short h_accuracy; // horizontal position accuracy estimate
+  unsigned short v_accuracy; // vertical position accuracy estimate
+  unsigned char n_sats;   // Number of satellites used in solution
+  unsigned char position_flags; // status flags from MSG_BASELINE_NED. 
+} piksi_ned_data;
 
 
 char *serial_port_name = NULL;
 struct sp_port *piksi_port = NULL;
-//int s = -1;                           // for modbus testing
-//modbus_t *ctx;                        // for modbus testing
-//modbus_mapping_t *mb_mapping;         // for modbus testing
-
-
+piksi_ned_data *CurrentData;
 
 static sbp_msg_callbacks_node_t heartbeat_callback_node;
 static sbp_msg_callbacks_node_t base_pos_llh_callback_node;
@@ -74,41 +88,6 @@ void setup_port()
     exit(EXIT_FAILURE);
   }
 }
-/*
-int modbus_server_setup()
-{
-
-
-    ctx = modbus_new_tcp("127.0.0.1", 1502);
-    // modbus_set_debug(ctx, TRUE); 
-
-    mb_mapping = modbus_mapping_new(500, 500, 500, 500);
-    if (mb_mapping == NULL) {
-        fprintf(stderr, "Failed to allocate the mapping: %s\n",
-                modbus_strerror(errno));
-        modbus_free(ctx);
-        return -1;
-    }
-
-    s = modbus_tcp_listen(ctx, 1);
-    modbus_tcp_accept(ctx, &s);
-}
-
-int modbus_server_close()
-{
-  printf("Quit the loop: %s\n", modbus_strerror(errno));
-
-    if (s != -1) {
-        close(s);
-    }
-    modbus_mapping_free(mb_mapping);
-    modbus_close(ctx);
-    modbus_free(ctx);
-
-    return 0;
-}
-
-*/
 
 
 u32 piksi_port_read(u8 *buff, u32 n, void *context)
@@ -135,6 +114,11 @@ int main(int argc, char **argv)
   char blnBaseNEDEnabled = 1;
   char blnPiksiOutputEnabled=1;
   
+  
+  //int intSocket = -1;                   // for modbus testing
+  //modbus_t *ctx;                        // for modbus testing
+  //modbus_mapping_t *mb_mapping;         // for modbus testing
+
   
   //fprintf(stdout, ".2\n");
   if (argc <= 1) {
@@ -256,74 +240,44 @@ int main(int argc, char **argv)
                           &imu_raw_callback_node);
   }
 /*
-  modbus_server_setup();
+  //  ***************************** initialise modbus ***************************** 
+  ctx = modbus_new_tcp("0.0.0.0", 1502);
+  // modbus_set_debug(ctx, TRUE); 
+
+  mb_mapping = modbus_mapping_new(500, 500, 500, 500);
+  if (mb_mapping == NULL) {
+      fprintf(stderr, "Failed to allocate the mapping: %s\n",
+              modbus_strerror(errno));
+      modbus_free(ctx);
+      return -1;
+  }
+
+  intSocket = modbus_tcp_listen(ctx, 1);
+  modbus_tcp_accept(ctx, &intSocket);
+  //  *****************************************************************************
+*/
+  while(1) {
+    sbp_process(&s, &piksi_port_read);
+  //  modbus_process_incoming_request();
+  }
+
+  /*
+  //  ***************************** close modbus ***************************** 
   
-  fprintf(stdout, "\n\nmodbus_server is up and running\n\n");
-  
-  modbus_server_close();
-  */
-  
-  //******************************************************************************************************************************************************
-  int se = -1;
-    modbus_t *ctx;
-    modbus_mapping_t *mb_mapping;
+      printf("Quit the loop: %s\n", modbus_strerror(errno));
 
-    ctx = modbus_new_tcp("127.0.0.1", 1502);
-    /* modbus_set_debug(ctx, TRUE); */
-
-    mb_mapping = modbus_mapping_new(500, 500, 500, 500);
-    if (mb_mapping == NULL) {
-        fprintf(stderr, "Failed to allocate the mapping: %s\n",
-                modbus_strerror(errno));
-        modbus_free(ctx);
-        return -1;
-    }
-
-    se = modbus_tcp_listen(ctx, 1);
-    modbus_tcp_accept(ctx, &se);
-
-    for (;;) {
-        uint8_t query[MODBUS_TCP_MAX_ADU_LENGTH];
-        int rc;
-
-        rc = modbus_receive(ctx, query);
-        if (rc > 0) {
-            /* rc is the query size */
-            modbus_reply(ctx, query, rc, mb_mapping);
-        } else if (rc == -1) {
-            /* Connection closed by the client or error */
-            break;
-        }
-    }
-
-    printf("Quit the loop: %s\n", modbus_strerror(errno));
-
-    if (se != -1) {
-        close(se);
+    if (intSocket != -1) {
+        close(intSocket);
     }
     modbus_mapping_free(mb_mapping);
     modbus_close(ctx);
     modbus_free(ctx);
 
+
+  //  *****************************************************************************
+  */
   
   
   
-  
-  //******************************************************************************************************************************************************
-  while(1) {
-    sbp_process(&s, &piksi_port_read);
-  }
-
-  result = sp_close(piksi_port);
-  if (result != SP_OK) {
-    fprintf(stderr, "Cannot close %s properly!\n", serial_port_name);
-  }
-
-  sp_free_port(piksi_port);
-
-  free(serial_port_name);
-
   return 0;
-
-  
   }

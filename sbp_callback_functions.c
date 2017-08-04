@@ -102,7 +102,10 @@ void base_pos_llh_callback(u16 sender_id, u8 len, u8 msg[], void *context)
 void gps_time_callback(u16 sender_id, u8 len, u8 msg[], void *context)
 {
   (void)sender_id, (void)len, (void)msg, (void)context;
-  /*int i, intExpectedLength=11;
+  
+  
+  
+  int i, intExpectedLength=11;
   
   msg_gps_time_t *gps_time_struct;
   
@@ -124,7 +127,7 @@ void gps_time_callback(u16 sender_id, u8 len, u8 msg[], void *context)
     fprintf(stdout, "flags = %d: ", gps_time_struct -> flags);
     
   }
-  fprintf(stdout, "%s\n", __FUNCTION__); // output function name*/
+  fprintf(stdout, "%s\n", __FUNCTION__); // output function name
 }
 
 void utc_time_callback(u16 sender_id, u8 len, u8 msg[], void *context)
