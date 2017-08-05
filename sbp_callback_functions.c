@@ -75,6 +75,44 @@ void baseline_ned_callback(u16 sender_id, u8 len, u8 msg[], void *context)
   fprintf(stdout, "%s\n", __FUNCTION__);
 }
 
+void vel_ned_callback(u16 sender_id, u8 len, u8 msg[], void *context)
+{
+  (void)sender_id, (void)len, (void)msg, (void)context;
+    int i, intExpectedLength=22;
+  
+  msg_vel_ned_t *vel_ned_struct;
+  
+  if (len != intExpectedLength)
+  {
+    fprintf(stdout, "Message received was of invalid length: len=%d\n", len);
+  }
+  else
+  {
+    vel_ned_struct = (msg_vel_ned_t *) msg; // cast msg pointer to appropriate type and save for later use
+    for(i=0;i<len;i++)
+    {
+      //fprintf(stdout, "%02x ", msg[i]); // loop through msg and print out data as hex
+    }
+    // output items in structure
+    fprintf(stdout, "tow = %d ms; ", vel_ned_struct -> tow);
+    fprintf(stdout, "-> north_vel/east_vel/down_vel = %d/%d/%d ", vel_ned_struct -> n,  vel_ned_struct -> e,  vel_ned_struct -> d);
+    fprintf(stdout, "-> h_acc/v_acc/#sats = %d/%d/%d ", vel_ned_struct -> h_accuracy,  vel_ned_struct -> v_accuracy,  vel_ned_struct -> n_sats);
+    switch (vel_ned_struct -> flags)
+    {
+      case 0x00:
+        fprintf(stdout, "-> src=invalid ");
+        break;
+      case 0x01:
+        fprintf(stdout, "-> src=Measured Doppler derived ");
+        break;
+      case 0x02:
+        fprintf(stdout, "-> src=Computed Doppler derived ");
+        break;
+    }    
+  }
+  fprintf(stdout, "%s\n", __FUNCTION__);
+}
+
 void base_pos_llh_callback(u16 sender_id, u8 len, u8 msg[], void *context)
 {
   (void)sender_id, (void)len, (void)msg, (void)context;

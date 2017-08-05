@@ -20,6 +20,8 @@ void pos_llh_callback(u16 sender_id, u8 len, u8 msg[], void *context);
 
 void baseline_ned_callback(u16 sender_id, u8 len, u8 msg[], void *context);
 
+void vel_ned_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+
 void base_pos_llh_callback(u16 sender_id, u8 len, u8 msg[], void *context);
 
 void gps_time_callback(u16 sender_id, u8 len, u8 msg[], void *context);

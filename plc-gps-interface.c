@@ -19,32 +19,90 @@
 #include "sbp_callback_functions.h"
 
 typedef struct {
+  // logical grouping of NED coordinate information
+
+  // see definition of SBP protocol at https://github.com/swift-nav/libsbp/blob/master/docs/sbp.pdf
+  // populated from SBP message MSG_BASELINE_NED
+  uint32_t tow; // time of week. 
+  int32_t n; // baseline North coordinate
+  int32_t e; // baseline East coordinate
+  int32_t d; // baseline Down coordinate
+  uint16_t h_accuracy; // horizontal position accuracy estimate
+  uint16_t v_accuracy; // vertical position accuracy estimate
+  uint8_t n_sats;   // Number of satellites used in solution
+  uint8_t position_flags; // status flags from MSG_BASELINE_NED. 
+} piksi_NED_data_t;
+
+typedef struct {
+  // logical grouping of absolute geodetic coordinate information
+
+  // see definition of SBP protocol at https://github.com/swift-nav/libsbp/blob/master/docs/sbp.pdf
+  // populated from SBP message MSG_POS_LLH
+  uint32_t tow; // time of week. 
+  double latitude; // geodetic latitude
+  double longitude; // geodetic longitude
+  double height; // height above WGS84 ellipsoid
+  uint16_t h_accuracy; // horizontal position accuracy estimate
+  uint16_t v_accuracy; // vertical position accuracy estimate
+  uint8_t n_sats;   // Number of satellites used in solution
+  uint8_t position_flags; // status flags from MSG_POS_LLH. 
+} piksi_LLH_data_t;
+
+typedef struct {
+  // logical grouping of NED velocity calculations as supplied by the Piksi multi device
+  
+  // see definition of SBP protocol at https://github.com/swift-nav/libsbp/blob/master/docs/sbp.pdf
+  // populated from SBP message MSG_VEL_NED
+  uint32_t tow; // time of week. 
+  int32_t n_velocity; // baseline North velocity mm/s
+  int32_t e_velocity; // baseline East velocity mm/s
+  int32_t d_velocity; // baseline Down velocity mm/s
+  // accuracy estimate information is stated as "not implemented. 
+  // Defaults to 0" as of protocol specification 2.2.1, but in 2.2.8 there is no such qualifier.
+  uint16_t h_accuracy; // horizontal velocity accuracy estimate
+  uint16_t v_accuracy; // vertical velocity accuracy estimate
+  uint8_t n_sats;   // Number of satellites used in solution
+  uint8_t position_flags; // status flags from MSG_BASELINE_NED. 
+} piksi_NED_velocity_t;
+
+typedef struct {
+  // logical grouping of IMU data 
+  
+  // see definition of SBP protocol at https://github.com/swift-nav/libsbp/blob/master/docs/sbp.pdf
+  // populated from SBP message MSG_IMU_RAW
+  uint32_t tow; // time of week. 
+  uint8_t tow_f; // fractional part of time of week. allows greater accuracy than ms as required by high sampling rates
+  int16_t acc_x; // acceleration in the body frame x axis
+  int16_t acc_y; // acceleration in the body frame y axis
+  int16_t acc_z; // acceleration in the body frame z axis
+  int16_t gyro_x; // angular rate around the body frame x axis
+  int16_t gyro_y; // angular rate around the body frame y axis
+  int16_t gyro_z; // angular rate around the body frame z axis
+} piksi_IMU_data_t;
+
+typedef struct {
   // see definition of SBP protocol at https://github.com/swift-nav/libsbp/blob/master/docs/sbp.pdf
 
   // populated from SBP message MSG_GPS_TIME
   uint16_t weeks; // # of weeks since unix epoch MSG_GPS_TIME
   uint32_t tow; // time of week. 
   int ns_residual; // residual nanoseconds for precise time
+  piksi_NED_data_t *NED_data;
+  piksi_LLH_data_t *LLH_data;
+  piksi_NED_velocity_t *NED_velocity_data;
+  piksi_IMU_data_t *IMU_data;
+} piksi_data_t;
 
-  // populated from SBP message MSG_BASELINE_NED
-  int x; // baseline North coordinate
-  int y; // baseline East coordinate
-  int z; // baseline Down coordinate
-  unsigned short h_accuracy; // horizontal position accuracy estimate
-  unsigned short v_accuracy; // vertical position accuracy estimate
-  unsigned char n_sats;   // Number of satellites used in solution
-  unsigned char position_flags; // status flags from MSG_BASELINE_NED. 
-} piksi_ned_data;
-
-
+char strDummyInput[100];
 char *serial_port_name = NULL;
 struct sp_port *piksi_port = NULL;
-piksi_ned_data *CurrentData;
+piksi_data_t *CurrentData;
 
 static sbp_msg_callbacks_node_t heartbeat_callback_node;
 static sbp_msg_callbacks_node_t base_pos_llh_callback_node;
 static sbp_msg_callbacks_node_t pos_llh_callback_node;
 static sbp_msg_callbacks_node_t baseline_ned_callback_node;
+static sbp_msg_callbacks_node_t vel_ned_callback_node;
 static sbp_msg_callbacks_node_t gps_time_callback_node;
 static sbp_msg_callbacks_node_t utc_time_callback_node;
 static sbp_msg_callbacks_node_t imu_raw_callback_node;
@@ -108,49 +166,45 @@ int main(int argc, char **argv)
   int result = 0;
   int intBaudRate = 115200;
   sbp_state_t s;
+
+  char blnGPSTimeEnabled = 1;
   char blnIMUEnabled = 1;
   char blnUTCTimeEnabled = 1;
   char blnBasePosEnabled = 1;
+  char blnLLHPosEnabled = 1;
   char blnBaseNEDEnabled = 1;
+  char blnVelNEDEnabled = 1;
   char blnPiksiOutputEnabled=1;
-  
+  char blnHeartbeatEnabled = 1;
   
   //int intSocket = -1;                   // for modbus testing
   //modbus_t *ctx;                        // for modbus testing
   //modbus_mapping_t *mb_mapping;         // for modbus testing
 
   
-  //fprintf(stdout, ".2\n");
   if (argc <= 1) {
     usage(argv[0]);
     fprintf(stdout, "a\n");
     exit(EXIT_FAILURE);
   }
-  //fprintf(stdout, ".3\n");
 
-  while ((opt = getopt(argc, argv, "p:b:ufin")) != -1) 
+  while ((opt = getopt(argc, argv, "p:b:gufinvle")) != -1) 
   {
-    //fprintf(stdout, ".4\n");
     switch (opt) {
       case 'p':
-        //fprintf(stdout, ".5\n");
         serial_port_name = (char *)calloc(strlen(optarg) + 1, sizeof(char));
-        //fprintf(stdout, ".6\n");
         if (!serial_port_name) {
           fprintf(stderr, "Cannot allocate memory!\n");
           exit(EXIT_FAILURE);
         }
-        //fprintf(stdout, ".7\n");
         strcpy(serial_port_name, optarg);
         fprintf(stdout, "serial port set to \"%s\"\n", serial_port_name);
         break;
       case 'b':
-        //fprintf(stdout, "1\n");
         {
            long l = -1;
            l=strtol(optarg, 0, 10);
 
-           //fprintf(stdout, "2\n");
            if ((!optarg) ||  (l <= 0))
              { 
                 fprintf(stderr, "invalid baud rate under option -b  %s - expecting a number\n", 
@@ -159,23 +213,41 @@ int main(int argc, char **argv)
                 usage(argv[0]);
                 exit(EXIT_FAILURE);
              };
-           //fprintf(stdout, "3\n");
            intBaudRate = (int) l;
         }
-        //fprintf(stdout, "4\n");
         fprintf(stdout, "baud rate set to %d\n\n", intBaudRate);
+        break;
+      case 'g': // if parameter is in existence, then disable GPS Time callback function
+        blnGPSTimeEnabled = 0; // disable GPS Time callback function
+        fprintf(stdout, "GPS Time disabled\n");
         break;
       case 'u': // if parameter is in existence, then disable UTC Time callback function
         blnUTCTimeEnabled = 0; // disable UTC Time callback function
+        fprintf(stdout, "UTC Time disabled\n");
+        break;
+      case 'l': // if parameter is in existence, then disable LLH position callback function
+        blnLLHPosEnabled = 0; // disable LLH position callback function
+        fprintf(stdout, "LLH position data collection disabled\n");
         break;
       case 'f': // if parameter is in existence, then disable base position callback function
         blnBasePosEnabled = 0; // disable base position callback function
+        fprintf(stdout, "base position data collection disabled\n");
         break;
       case 'i': // if parameter is in existence, then disable IMU callback function
         blnIMUEnabled = 0; // disable IMU callback function
+        fprintf(stdout, "IMU data collection disabled\n");
         break;
       case 'n': // if parameter is in existence, then disable baseline rover NED callback function
-        blnBaseNEDEnabled = 0; // disable disable baseline rover NED callback function
+        blnBaseNEDEnabled = 0; // disable baseline rover NED callback function
+        fprintf(stdout, "Baseline NED Rover coordinate collection disabled\n");
+        break;
+      case 'v': // if parameter is in existence, then disable velocity rover NED callback function
+        blnVelNEDEnabled = 0; // disable velocity rover NED callback function
+        fprintf(stdout, "NED velocity collection disabled\n");
+        break;
+      case 'e': // if parameter is in existence, then disable heartbeat callback function
+        blnHeartbeatEnabled = 0; // disable heartbeat callback function
+        fprintf(stdout, "heartbeat collection disabled\n");
         break;
       /*case 'h':
         usage(argv[0]);
@@ -183,6 +255,9 @@ int main(int argc, char **argv)
     }
   }
 
+  fprintf(stdout, "Type any character and press enter to continue\n");
+  scanf("%s", strDummyInput); // wait so we can read output
+  
   if (!serial_port_name) {
     fprintf(stderr, "Please supply the serial port path where the Piksi is " \
                     "connected!\n");
@@ -205,79 +280,50 @@ int main(int argc, char **argv)
 
   sbp_state_init(&s);
 
-  if (blnPiksiOutputEnabled) {
+  if ((blnPiksiOutputEnabled) && (blnHeartbeatEnabled))  {
   sbp_register_callback(&s, SBP_MSG_HEARTBEAT, &heartbeat_callback, NULL,
                         &heartbeat_callback_node);
   }
 
-  if ((blnPiksiOutputEnabled) || (blnBasePosEnabled)) {
+  if ((blnPiksiOutputEnabled) && (blnBasePosEnabled)) {
   sbp_register_callback(&s, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, NULL,
                         &base_pos_llh_callback_node);
   }
 
-  if (blnPiksiOutputEnabled) {
+  if ((blnPiksiOutputEnabled) && (blnLLHPosEnabled)) {
   sbp_register_callback(&s, SBP_MSG_POS_LLH, &pos_llh_callback, NULL,
                         &pos_llh_callback_node);
   }
 
-  if ((blnPiksiOutputEnabled) || (blnBaseNEDEnabled)) {
+  if ((blnPiksiOutputEnabled) && (blnBaseNEDEnabled)) {
     sbp_register_callback(&s, SBP_MSG_BASELINE_NED, &baseline_ned_callback, NULL,
                           &baseline_ned_callback_node);
   }
+  if ((blnPiksiOutputEnabled) && (blnVelNEDEnabled)) {
+    sbp_register_callback(&s, SBP_MSG_VEL_NED, &vel_ned_callback, NULL,
+                          &vel_ned_callback_node);
+  }
 
-  if (blnPiksiOutputEnabled) {
+  if ((blnPiksiOutputEnabled) && (blnGPSTimeEnabled)) {
   sbp_register_callback(&s, SBP_MSG_GPS_TIME, &gps_time_callback, NULL,
                         &gps_time_callback_node);
   }
 						
-  if ((blnPiksiOutputEnabled) || (blnUTCTimeEnabled)) {
+  if ((blnPiksiOutputEnabled) && (blnUTCTimeEnabled)) {
   sbp_register_callback(&s, SBP_MSG_UTC_TIME, &utc_time_callback, NULL,
                         &utc_time_callback_node);
   }
 
-  if ((blnPiksiOutputEnabled) || (blnIMUEnabled)) {
+  if ((blnPiksiOutputEnabled) && (blnIMUEnabled)) {
     sbp_register_callback(&s, SBP_MSG_IMU_RAW, &imu_raw_callback, NULL,
                           &imu_raw_callback_node);
   }
-/*
-  //  ***************************** initialise modbus ***************************** 
-  ctx = modbus_new_tcp("0.0.0.0", 1502);
-  // modbus_set_debug(ctx, TRUE); 
 
-  mb_mapping = modbus_mapping_new(500, 500, 500, 500);
-  if (mb_mapping == NULL) {
-      fprintf(stderr, "Failed to allocate the mapping: %s\n",
-              modbus_strerror(errno));
-      modbus_free(ctx);
-      return -1;
-  }
 
-  intSocket = modbus_tcp_listen(ctx, 1);
-  modbus_tcp_accept(ctx, &intSocket);
-  //  *****************************************************************************
-*/
   while(1) {
-    sbp_process(&s, &piksi_port_read);
-  //  modbus_process_incoming_request();
+    sbp_process(&s, &piksi_port_read); // process requests from Piksi Multi
   }
 
-  /*
-  //  ***************************** close modbus ***************************** 
-  
-      printf("Quit the loop: %s\n", modbus_strerror(errno));
-
-    if (intSocket != -1) {
-        close(intSocket);
-    }
-    modbus_mapping_free(mb_mapping);
-    modbus_close(ctx);
-    modbus_free(ctx);
-
-
-  //  *****************************************************************************
-  */
-  
-  
   
   return 0;
   }
