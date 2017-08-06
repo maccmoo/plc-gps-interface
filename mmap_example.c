@@ -185,8 +185,6 @@ int main(void)
 {
   int parpid = getpid(), childpid;
   piksi_ned_data *anon;
-  //int i;
-
   anon = (piksi_ned_data *)mmap(NULL, sizeof(piksi_ned_data), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
 
   if (anon == MAP_FAILED)

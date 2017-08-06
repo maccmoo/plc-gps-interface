@@ -1,10 +1,19 @@
+// this macro is defined in libmodbus 3.14, but not in 3.06. as it is very useful, 
+// I will define it here with an ifndef which "should" not break if we upgrade to 3.14
+#ifndef MODBUS_SET_INT32_TO_INT16 
+# define MODBUS_SET_INT32_TO_INT16(tab_int16, index, value) \
+    do { \
+        tab_int16[(index)    ] = (value) >> 16; \
+        tab_int16[(index) + 1] = (value); \
+    } while (0)
+#endif
 
 #include <stdio.h>
 //#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
+#include <sys/mman.h>
 #include <libserialport.h>
 
 #include <libsbp/sbp.h>
@@ -16,87 +25,12 @@
 #include <modbus/modbus-tcp.h>
 
 #include <errno.h>
+#include <err.h>
 #include "sbp_callback_functions.h"
-
-typedef struct {
-  // logical grouping of NED coordinate information
-
-  // see definition of SBP protocol at https://github.com/swift-nav/libsbp/blob/master/docs/sbp.pdf
-  // populated from SBP message MSG_BASELINE_NED
-  uint32_t tow; // time of week. 
-  int32_t n; // baseline North coordinate
-  int32_t e; // baseline East coordinate
-  int32_t d; // baseline Down coordinate
-  uint16_t h_accuracy; // horizontal position accuracy estimate
-  uint16_t v_accuracy; // vertical position accuracy estimate
-  uint8_t n_sats;   // Number of satellites used in solution
-  uint8_t position_flags; // status flags from MSG_BASELINE_NED. 
-} piksi_NED_data_t;
-
-typedef struct {
-  // logical grouping of absolute geodetic coordinate information
-
-  // see definition of SBP protocol at https://github.com/swift-nav/libsbp/blob/master/docs/sbp.pdf
-  // populated from SBP message MSG_POS_LLH
-  uint32_t tow; // time of week. 
-  double latitude; // geodetic latitude
-  double longitude; // geodetic longitude
-  double height; // height above WGS84 ellipsoid
-  uint16_t h_accuracy; // horizontal position accuracy estimate
-  uint16_t v_accuracy; // vertical position accuracy estimate
-  uint8_t n_sats;   // Number of satellites used in solution
-  uint8_t position_flags; // status flags from MSG_POS_LLH. 
-} piksi_LLH_data_t;
-
-typedef struct {
-  // logical grouping of NED velocity calculations as supplied by the Piksi multi device
-  
-  // see definition of SBP protocol at https://github.com/swift-nav/libsbp/blob/master/docs/sbp.pdf
-  // populated from SBP message MSG_VEL_NED
-  uint32_t tow; // time of week. 
-  int32_t n_velocity; // baseline North velocity mm/s
-  int32_t e_velocity; // baseline East velocity mm/s
-  int32_t d_velocity; // baseline Down velocity mm/s
-  // accuracy estimate information is stated as "not implemented. 
-  // Defaults to 0" as of protocol specification 2.2.1, but in 2.2.8 there is no such qualifier.
-  uint16_t h_accuracy; // horizontal velocity accuracy estimate
-  uint16_t v_accuracy; // vertical velocity accuracy estimate
-  uint8_t n_sats;   // Number of satellites used in solution
-  uint8_t position_flags; // status flags from MSG_BASELINE_NED. 
-} piksi_NED_velocity_t;
-
-typedef struct {
-  // logical grouping of IMU data 
-  
-  // see definition of SBP protocol at https://github.com/swift-nav/libsbp/blob/master/docs/sbp.pdf
-  // populated from SBP message MSG_IMU_RAW
-  uint32_t tow; // time of week. 
-  uint8_t tow_f; // fractional part of time of week. allows greater accuracy than ms as required by high sampling rates
-  int16_t acc_x; // acceleration in the body frame x axis
-  int16_t acc_y; // acceleration in the body frame y axis
-  int16_t acc_z; // acceleration in the body frame z axis
-  int16_t gyro_x; // angular rate around the body frame x axis
-  int16_t gyro_y; // angular rate around the body frame y axis
-  int16_t gyro_z; // angular rate around the body frame z axis
-} piksi_IMU_data_t;
-
-typedef struct {
-  // see definition of SBP protocol at https://github.com/swift-nav/libsbp/blob/master/docs/sbp.pdf
-
-  // populated from SBP message MSG_GPS_TIME
-  uint16_t weeks; // # of weeks since unix epoch MSG_GPS_TIME
-  uint32_t tow; // time of week. 
-  int ns_residual; // residual nanoseconds for precise time
-  piksi_NED_data_t *NED_data;
-  piksi_LLH_data_t *LLH_data;
-  piksi_NED_velocity_t *NED_velocity_data;
-  piksi_IMU_data_t *IMU_data;
-} piksi_data_t;
 
 char strDummyInput[100];
 char *serial_port_name = NULL;
 struct sp_port *piksi_port = NULL;
-piksi_data_t *CurrentData;
 
 static sbp_msg_callbacks_node_t heartbeat_callback_node;
 static sbp_msg_callbacks_node_t base_pos_llh_callback_node;
@@ -106,6 +40,142 @@ static sbp_msg_callbacks_node_t vel_ned_callback_node;
 static sbp_msg_callbacks_node_t gps_time_callback_node;
 static sbp_msg_callbacks_node_t utc_time_callback_node;
 static sbp_msg_callbacks_node_t imu_raw_callback_node;
+
+
+
+int runModBusTcpServer(piksi_data_t *piksi_struct)
+{
+  int socket;
+  modbus_t *ctx;
+  modbus_mapping_t *mb_mapping;
+  int rc;
+  int nPort = 502; // port number for modbus
+  //fprintf(stdout, "c-1\n");
+  // we only need holding registers. will define a few of each other type just in case
+  mb_mapping = modbus_mapping_new(100, 100, 10000, 100);
+  //fprintf(stdout, "c-2\n");
+  if (mb_mapping == NULL) {
+      fprintf(stderr, "Failed to allocate the mapping: %s\n", modbus_strerror(errno));
+      //modbus_free(ctx);
+      return -1;
+  }
+  //fprintf(stdout, "c-3\n");
+
+  printf("Waiting for TCP connection on Port %i \n",nPort);
+  ctx = modbus_new_tcp("0.0.0.0", nPort); // 0.0.0.0 means to listen on all IP addresses
+  socket = modbus_tcp_listen(ctx, 1);
+  modbus_tcp_accept(ctx, &socket);
+  printf("TCP connection started!\n");
+  
+  for(;;) 
+  {
+    uint8_t query[MODBUS_TCP_MAX_ADU_LENGTH];
+
+    rc = modbus_receive(ctx, query);
+    if (rc >= 0) 
+    {
+      int nToShow = 20;
+      int i=0;
+
+      // request received. populate registers from structure
+      //fprintf(stdout, "sizeof  ", sizeof(mb_mapping->tab_registers));
+      mb_mapping->tab_registers[0] = piksi_struct->GPS_time_data->wn;
+      MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, 1, piksi_struct->GPS_time_data->tow);
+      fprintf(stdout, "from modbus registers: week number/tow => %d/%d\n", mb_mapping->tab_registers[0], MODBUS_GET_INT32_FROM_INT16(mb_mapping -> tab_registers, 1) );
+      fprintf(stdout, "struct: week number/tow => %d/%d\n", piksi_struct->GPS_time_data->wn, piksi_struct->GPS_time_data->tow);
+      
+      //fprintf(stdout, "retrieving data from struct: weeks/tow ==> %d/%d\n", mb_mapping->tab_registers[0], MODBUS_GET_INT32_FROM_INT16(mb_mapping -> tab_registers, 1));
+      
+
+      printf("Replying to request num bytes=%i (",rc);
+      for(i=0;i<rc;i++)
+      {
+        printf("%i, ",query[i]);
+      }
+      printf(")\n");
+
+      modbus_reply(ctx, query, rc, mb_mapping);
+
+      /*// after each communication, show the first ? ModBus registers so you can see what is happening
+      printf("tab_bits = ");
+      for( i=0;i<nToShow;i++)
+      {
+        printf("%i, ",mb_mapping->tab_bits[i]);
+      }
+      printf("\n");
+
+      printf("tab_input_bits = ");
+      for( i=0;i<nToShow;i++)
+      {
+        printf("%i, ",mb_mapping->tab_input_bits[i]);
+      }
+      printf("\n");
+
+      printf("tab_input_registers = ");
+      for( i=0;i<nToShow;i++)
+      {
+        printf("%i, ",mb_mapping->tab_input_registers[i]);
+      }
+      printf("\n");
+      */
+      
+      printf("tab_registers = ");
+      for( i=0;i<nToShow;i++)
+      {
+        printf("%i, ",mb_mapping->tab_registers[i]);
+      }
+      printf("\n");
+
+      // every time we do a communication, update a bunch of the registers so we have something interesting to plot on the graphs
+      mb_mapping->tab_registers[0]++; // increment the holding reg 0 for each read
+      mb_mapping->tab_registers[1] = rand(); // this register is a full scale random number 0 - 0xffff
+      mb_mapping->tab_input_registers[0] = 2; // version number
+      for( i=1;i<nToShow;i++)
+      {
+        // randomly increase or decrease the register, but do not allow wrapping
+        if( rand() > RAND_MAX/2 )
+        {		
+          if ( mb_mapping->tab_input_registers[i] < 0xfffe )
+          {
+            mb_mapping->tab_input_registers[i] += 1;
+          }
+          
+          if( mb_mapping->tab_registers[i+1] < 0xfffe )
+          {
+            mb_mapping->tab_registers[i+1] += 1;
+          }
+        }
+        else
+        {
+          if( mb_mapping->tab_input_registers[i] > 0 )
+          {
+            mb_mapping->tab_input_registers[i] -= 1;
+          }
+          if( mb_mapping->tab_registers[i+1] > 0 )
+          {
+            mb_mapping->tab_registers[i+1] -= 1;
+          }
+        } 
+      }
+    } 
+    else 
+    {
+      /* Connection closed by the client or server */
+      printf("Con Closed.\n");
+      modbus_close(ctx); // close
+      // immediately start waiting for another request again
+      modbus_tcp_accept(ctx, &socket);
+    }
+  }
+
+  printf("Quit the loop: %s\n", modbus_strerror(errno));
+
+  modbus_mapping_free(mb_mapping);
+  close(socket);
+  modbus_free(ctx);
+  return 0;
+}
+
 
 
 void usage(char *prog_name) {
@@ -177,10 +247,11 @@ int main(int argc, char **argv)
   char blnPiksiOutputEnabled=1;
   char blnHeartbeatEnabled = 1;
   
-  //int intSocket = -1;                   // for modbus testing
-  //modbus_t *ctx;                        // for modbus testing
-  //modbus_mapping_t *mb_mapping;         // for modbus testing
-
+  int parpid = getpid(), childpid;
+  fprintf(stdout, "parent processID=%d\n", parpid);
+  piksi_data_t *CurrentData = (piksi_data_t *)mmap(NULL, sizeof(*CurrentData), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  //piksi_data_t *CurrentData = calloc(1, sizeof(*CurrentData));
+  piksi_data_setup(CurrentData);
   
   if (argc <= 1) {
     usage(argv[0]);
@@ -257,6 +328,38 @@ int main(int argc, char **argv)
 
   fprintf(stdout, "Type any character and press enter to continue\n");
   scanf("%s", strDummyInput); // wait so we can read output
+
+  
+  switch ((childpid = fork())) 
+  {
+  case -1:
+    err(1, "fork");
+    // NOTREACHED
+  case 0: // ******************************** in the child process ********************************
+    childpid = getpid();
+    fprintf(stdout, "child PID %d\n", childpid);
+
+    
+    
+    
+    runModBusTcpServer(CurrentData);
+    /*while(1)
+    {
+      usleep(100000);
+      fprintf(stdout, ".\n");
+    }*/
+    
+    
+    fprintf(stdout, "terminating child process PID %d\n", childpid);
+    
+    //munmap(anon, sizeof(piksi_ned_data));
+    piksi_data_close(CurrentData);
+    return EXIT_SUCCESS;
+  }
+
+
+  
+  
   
   if (!serial_port_name) {
     fprintf(stderr, "Please supply the serial port path where the Piksi is " \
@@ -281,41 +384,41 @@ int main(int argc, char **argv)
   sbp_state_init(&s);
 
   if ((blnPiksiOutputEnabled) && (blnHeartbeatEnabled))  {
-  sbp_register_callback(&s, SBP_MSG_HEARTBEAT, &heartbeat_callback, NULL,
+  sbp_register_callback(&s, SBP_MSG_HEARTBEAT, &heartbeat_callback, (void*)CurrentData,
                         &heartbeat_callback_node);
   }
 
   if ((blnPiksiOutputEnabled) && (blnBasePosEnabled)) {
-  sbp_register_callback(&s, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, NULL,
+  sbp_register_callback(&s, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, (void*)CurrentData,
                         &base_pos_llh_callback_node);
   }
 
   if ((blnPiksiOutputEnabled) && (blnLLHPosEnabled)) {
-  sbp_register_callback(&s, SBP_MSG_POS_LLH, &pos_llh_callback, NULL,
+  sbp_register_callback(&s, SBP_MSG_POS_LLH, &pos_llh_callback, (void*)CurrentData,
                         &pos_llh_callback_node);
   }
 
   if ((blnPiksiOutputEnabled) && (blnBaseNEDEnabled)) {
-    sbp_register_callback(&s, SBP_MSG_BASELINE_NED, &baseline_ned_callback, NULL,
+    sbp_register_callback(&s, SBP_MSG_BASELINE_NED, &baseline_ned_callback, (void*)CurrentData,
                           &baseline_ned_callback_node);
   }
   if ((blnPiksiOutputEnabled) && (blnVelNEDEnabled)) {
-    sbp_register_callback(&s, SBP_MSG_VEL_NED, &vel_ned_callback, NULL,
+    sbp_register_callback(&s, SBP_MSG_VEL_NED, &vel_ned_callback, (void*)CurrentData,
                           &vel_ned_callback_node);
   }
 
   if ((blnPiksiOutputEnabled) && (blnGPSTimeEnabled)) {
-  sbp_register_callback(&s, SBP_MSG_GPS_TIME, &gps_time_callback, NULL,
+  sbp_register_callback(&s, SBP_MSG_GPS_TIME, &gps_time_callback, (void*)CurrentData,
                         &gps_time_callback_node);
   }
 						
   if ((blnPiksiOutputEnabled) && (blnUTCTimeEnabled)) {
-  sbp_register_callback(&s, SBP_MSG_UTC_TIME, &utc_time_callback, NULL,
+  sbp_register_callback(&s, SBP_MSG_UTC_TIME, &utc_time_callback, (void*)CurrentData,
                         &utc_time_callback_node);
   }
 
   if ((blnPiksiOutputEnabled) && (blnIMUEnabled)) {
-    sbp_register_callback(&s, SBP_MSG_IMU_RAW, &imu_raw_callback, NULL,
+    sbp_register_callback(&s, SBP_MSG_IMU_RAW, &imu_raw_callback, (void*)CurrentData,
                           &imu_raw_callback_node);
   }
 
@@ -324,6 +427,8 @@ int main(int argc, char **argv)
     sbp_process(&s, &piksi_port_read); // process requests from Piksi Multi
   }
 
+  
+  piksi_data_close(CurrentData);
   
   return 0;
   }
