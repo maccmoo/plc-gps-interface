@@ -135,7 +135,7 @@ int runModBusTcpServer(piksi_ned_data *piksi_struct)
           // randomly increase or decrease the register, but do not allow wrapping
           if( rand() > RAND_MAX/2 )
           {		
-            if ( mb_mapping->tab_input_registers[i] < 0xfffe );
+            if ( mb_mapping->tab_input_registers[i] < 0xfffe )
             {
               mb_mapping->tab_input_registers[i] += 1;
             }

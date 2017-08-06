@@ -1,3 +1,42 @@
+#define reg_MSG_GPS_TIME_wn 100
+#define reg_MSG_GPS_TIME_tow 101
+#define reg_MSG_GPS_TIME_ns_residual 103
+#define reg_MSG_GPS_TIME_flags 105
+#define reg_MSG_BASELINE_NED_tow 106
+#define reg_MSG_BASELINE_NED_n 108
+#define reg_MSG_BASELINE_NED_e 110
+#define reg_MSG_BASELINE_NED_d 112
+#define reg_MSG_BASELINE_NED_h_accuracy 114
+#define reg_MSG_BASELINE_NED_v_accuracy 115
+#define reg_MSG_BASELINE_NED_n_sats 116
+#define reg_MSG_BASELINE_NED_flags 117
+#define reg_MSG_POS_LLH_tow 118
+#define reg_MSG_POS_LLH_lat 120
+#define reg_MSG_POS_LLH_lon 124
+#define reg_MSG_POS_LLH_height 128
+#define reg_MSG_POS_LLH_h_accuracy 132
+#define reg_MSG_POS_LLH_v_accuracy 133
+#define reg_MSG_POS_LLH_n_sats 134
+#define reg_MSG_POS_LLH_flags 135
+#define reg_MSG_VEL_NED_tow 136
+#define reg_MSG_VEL_NED_n 138
+#define reg_MSG_VEL_NED_e 140
+#define reg_MSG_VEL_NED_d 142
+#define reg_MSG_VEL_NED_h_accuracy 144
+#define reg_MSG_VEL_NED_v_accuracy 145
+#define reg_MSG_VEL_NED_n_sats 146
+#define reg_MSG_VEL_NED_flags 147
+#define reg_MSG_IMU_RAW_tow 148
+#define reg_MSG_IMU_RAW_tow_f 150
+#define reg_MSG_IMU_RAW_acc_x 151
+#define reg_MSG_IMU_RAW_acc_y 152
+#define reg_MSG_IMU_RAW_acc_z 153
+#define reg_MSG_IMU_RAW_gyr_x 154
+#define reg_MSG_IMU_RAW_gyr_y 155
+#define reg_MSG_IMU_RAW_gyr_z 156
+
+
+
 // this macro is defined in libmodbus 3.14, but not in 3.06. as it is very useful, 
 // I will define it here with an ifndef which "should" not break if we upgrade to 3.14
 #ifndef MODBUS_SET_INT32_TO_INT16 
@@ -43,6 +82,49 @@ static sbp_msg_callbacks_node_t imu_raw_callback_node;
 
 
 
+int updateRegistersFromStruct(piksi_data_t *piksi_struct, modbus_mapping_t *mb_mapping)
+{
+  mb_mapping->tab_registers[reg_MSG_GPS_TIME_wn] = piksi_struct->GPS_time_data->wn;
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_GPS_TIME_tow, piksi_struct->GPS_time_data->tow);
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_GPS_TIME_ns_residual, piksi_struct->GPS_time_data->ns_residual);
+  mb_mapping->tab_registers[reg_MSG_GPS_TIME_flags] = piksi_struct->GPS_time_data->flags;
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_BASELINE_NED_tow, piksi_struct->NED_data->tow);
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_BASELINE_NED_n, piksi_struct->NED_data->n);
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_BASELINE_NED_e, piksi_struct->NED_data->e);
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_BASELINE_NED_d, piksi_struct->NED_data->d);
+  mb_mapping->tab_registers[reg_MSG_BASELINE_NED_h_accuracy] = piksi_struct->NED_data->h_accuracy;
+  mb_mapping->tab_registers[reg_MSG_BASELINE_NED_v_accuracy] = piksi_struct->NED_data->v_accuracy;
+  mb_mapping->tab_registers[reg_MSG_BASELINE_NED_n_sats] = piksi_struct->NED_data->n_sats;
+  mb_mapping->tab_registers[reg_MSG_BASELINE_NED_flags] = piksi_struct->NED_data->flags;
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_POS_LLH_tow, piksi_struct->LLH_data->tow);
+  mb_mapping->tab_registers[reg_MSG_POS_LLH_lat] = 0; // temporarily set to 0 till 64 bit float support is implemented
+  mb_mapping->tab_registers[reg_MSG_POS_LLH_lon] = 0; // temporarily set to 0 till 64 bit float support is implemented
+  mb_mapping->tab_registers[reg_MSG_POS_LLH_height] = 0; // temporarily set to 0 till 64 bit float support is implemented
+  mb_mapping->tab_registers[reg_MSG_POS_LLH_h_accuracy] = piksi_struct->LLH_data->h_accuracy;
+  mb_mapping->tab_registers[reg_MSG_POS_LLH_v_accuracy] = piksi_struct->LLH_data->v_accuracy;
+  mb_mapping->tab_registers[reg_MSG_POS_LLH_n_sats] = piksi_struct->LLH_data->n_sats;
+  mb_mapping->tab_registers[reg_MSG_POS_LLH_flags] = piksi_struct->LLH_data->flags;
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_VEL_NED_tow, piksi_struct->NED_velocity_data->tow);
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_VEL_NED_n, piksi_struct->NED_velocity_data->n);
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_VEL_NED_e, piksi_struct->NED_velocity_data->e);
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_VEL_NED_d, piksi_struct->NED_velocity_data->d);
+  mb_mapping->tab_registers[reg_MSG_VEL_NED_h_accuracy] = piksi_struct->NED_velocity_data->h_accuracy;
+  mb_mapping->tab_registers[reg_MSG_VEL_NED_v_accuracy] = piksi_struct->NED_velocity_data->v_accuracy;
+  mb_mapping->tab_registers[reg_MSG_VEL_NED_n_sats] = piksi_struct->NED_velocity_data->n_sats;
+  mb_mapping->tab_registers[reg_MSG_VEL_NED_flags] = piksi_struct->NED_velocity_data->flags;
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_IMU_RAW_tow, piksi_struct->IMU_data->tow);
+  mb_mapping->tab_registers[reg_MSG_IMU_RAW_tow_f] = piksi_struct->IMU_data->tow_f;
+  mb_mapping->tab_registers[reg_MSG_IMU_RAW_acc_x] = piksi_struct->IMU_data->acc_x;
+  mb_mapping->tab_registers[reg_MSG_IMU_RAW_acc_y] = piksi_struct->IMU_data->acc_y;
+  mb_mapping->tab_registers[reg_MSG_IMU_RAW_acc_z] = piksi_struct->IMU_data->acc_z;
+  mb_mapping->tab_registers[reg_MSG_IMU_RAW_gyr_x] = piksi_struct->IMU_data->gyr_x;
+  mb_mapping->tab_registers[reg_MSG_IMU_RAW_gyr_y] = piksi_struct->IMU_data->gyr_y;
+  mb_mapping->tab_registers[reg_MSG_IMU_RAW_gyr_z] = piksi_struct->IMU_data->gyr_z;
+
+  return 0;
+}
+
+
 int runModBusTcpServer(piksi_data_t *piksi_struct)
 {
   int socket;
@@ -50,19 +132,18 @@ int runModBusTcpServer(piksi_data_t *piksi_struct)
   modbus_mapping_t *mb_mapping;
   int rc;
   int nPort = 502; // port number for modbus
-  //fprintf(stdout, "c-1\n");
   // we only need holding registers. will define a few of each other type just in case
   mb_mapping = modbus_mapping_new(100, 100, 10000, 100);
-  //fprintf(stdout, "c-2\n");
   if (mb_mapping == NULL) {
       fprintf(stderr, "Failed to allocate the mapping: %s\n", modbus_strerror(errno));
       //modbus_free(ctx);
       return -1;
   }
-  //fprintf(stdout, "c-3\n");
 
   printf("Waiting for TCP connection on Port %i \n",nPort);
   ctx = modbus_new_tcp("0.0.0.0", nPort); // 0.0.0.0 means to listen on all IP addresses
+  //modbus_set_debug(ctx, TRUE);
+  
   socket = modbus_tcp_listen(ctx, 1);
   modbus_tcp_accept(ctx, &socket);
   printf("TCP connection started!\n");
@@ -74,101 +155,22 @@ int runModBusTcpServer(piksi_data_t *piksi_struct)
     rc = modbus_receive(ctx, query);
     if (rc >= 0) 
     {
-      int nToShow = 20;
-      int i=0;
-
-      // request received. populate registers from structure
-      //fprintf(stdout, "sizeof  ", sizeof(mb_mapping->tab_registers));
-      mb_mapping->tab_registers[0] = piksi_struct->GPS_time_data->wn;
-      MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, 1, piksi_struct->GPS_time_data->tow);
-      fprintf(stdout, "from modbus registers: week number/tow => %d/%d\n", mb_mapping->tab_registers[0], MODBUS_GET_INT32_FROM_INT16(mb_mapping -> tab_registers, 1) );
-      fprintf(stdout, "struct: week number/tow => %d/%d\n", piksi_struct->GPS_time_data->wn, piksi_struct->GPS_time_data->tow);
+      //fprintf(stdout, "from modbus registers: week number/tow => %d/%d\n", mb_mapping->tab_registers[reg_MSG_GPS_TIME_wn], MODBUS_GET_INT32_FROM_INT16(mb_mapping -> tab_registers, reg_MSG_GPS_TIME_tow) );
+      //fprintf(stdout, "struct: week number/tow => %d/%d\n", piksi_struct->GPS_time_data->wn, piksi_struct->GPS_time_data->tow);
       
-      //fprintf(stdout, "retrieving data from struct: weeks/tow ==> %d/%d\n", mb_mapping->tab_registers[0], MODBUS_GET_INT32_FROM_INT16(mb_mapping -> tab_registers, 1));
-      
-
-      printf("Replying to request num bytes=%i (",rc);
-      for(i=0;i<rc;i++)
-      {
-        printf("%i, ",query[i]);
-      }
-      printf(")\n");
-
+      updateRegistersFromStruct(piksi_struct, mb_mapping); // request received. populate registers from structure
       modbus_reply(ctx, query, rc, mb_mapping);
-
-      /*// after each communication, show the first ? ModBus registers so you can see what is happening
-      printf("tab_bits = ");
-      for( i=0;i<nToShow;i++)
-      {
-        printf("%i, ",mb_mapping->tab_bits[i]);
-      }
-      printf("\n");
-
-      printf("tab_input_bits = ");
-      for( i=0;i<nToShow;i++)
-      {
-        printf("%i, ",mb_mapping->tab_input_bits[i]);
-      }
-      printf("\n");
-
-      printf("tab_input_registers = ");
-      for( i=0;i<nToShow;i++)
-      {
-        printf("%i, ",mb_mapping->tab_input_registers[i]);
-      }
-      printf("\n");
-      */
-      
-      printf("tab_registers = ");
-      for( i=0;i<nToShow;i++)
-      {
-        printf("%i, ",mb_mapping->tab_registers[i]);
-      }
-      printf("\n");
-
-      // every time we do a communication, update a bunch of the registers so we have something interesting to plot on the graphs
-      mb_mapping->tab_registers[0]++; // increment the holding reg 0 for each read
-      mb_mapping->tab_registers[1] = rand(); // this register is a full scale random number 0 - 0xffff
-      mb_mapping->tab_input_registers[0] = 2; // version number
-      for( i=1;i<nToShow;i++)
-      {
-        // randomly increase or decrease the register, but do not allow wrapping
-        if( rand() > RAND_MAX/2 )
-        {		
-          if ( mb_mapping->tab_input_registers[i] < 0xfffe )
-          {
-            mb_mapping->tab_input_registers[i] += 1;
-          }
-          
-          if( mb_mapping->tab_registers[i+1] < 0xfffe )
-          {
-            mb_mapping->tab_registers[i+1] += 1;
-          }
-        }
-        else
-        {
-          if( mb_mapping->tab_input_registers[i] > 0 )
-          {
-            mb_mapping->tab_input_registers[i] -= 1;
-          }
-          if( mb_mapping->tab_registers[i+1] > 0 )
-          {
-            mb_mapping->tab_registers[i+1] -= 1;
-          }
-        } 
-      }
     } 
     else 
     {
       /* Connection closed by the client or server */
       printf("Con Closed.\n");
-      modbus_close(ctx); // close
-      // immediately start waiting for another request again
+	    modbus_close(ctx); // close
+	    // immediately start waiting for another request again
       modbus_tcp_accept(ctx, &socket);
     }
   }
 
-  printf("Quit the loop: %s\n", modbus_strerror(errno));
 
   modbus_mapping_free(mb_mapping);
   close(socket);
