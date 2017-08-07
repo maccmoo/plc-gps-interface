@@ -12,19 +12,51 @@
 #define SERVER_ID       17
 #define ADDRESS_START    0
 #define ADDRESS_END     99
+#define DEFAULT_IP "127.0.0.1"
 
-int main(void)
+
+int main(int argc, char **argv)
 {
   modbus_t *ctx;
-  int rc;
+  int rc, opt;
   int nb_fail=0;
   int addr = 100; // address of base register to start reading
   int nb = 5; // number of registers to read
   uint16_t *tab_rp_registers;
+  char *strIPAddress;
+  char strDefaultIP[]=DEFAULT_IP;
 
+    while ((opt = getopt(argc, argv, "a:")) != -1) 
+  {
+    switch (opt) {
+      case 'a':
+        strIPAddress = (char *)calloc(strlen(optarg) + 1, sizeof(char));
+        if (!strIPAddress) {
+          fprintf(stderr, "Cannot allocate memory!\n");
+          exit(EXIT_FAILURE);
+        }
+        strcpy(strIPAddress, optarg);
+        fprintf(stdout, "IP address set to \"%s\"\n", strIPAddress);
+        break;
+    }
+  }
+  
+  if (strIPAddress == NULL)
+  {
+        strIPAddress = (char *)calloc(strlen(strDefaultIP) + 1, sizeof(char));
+        if (!strIPAddress) {
+          fprintf(stderr, "Cannot allocate memory!\n");
+          exit(EXIT_FAILURE);
+        }
+    strcpy(strIPAddress, strDefaultIP);
+  }
+  
+  fprintf(stdout, "IP address set to \"%s\"\n", strIPAddress);
+  
 
   // TCP
-  ctx = modbus_new_tcp("127.0.0.1", 502);
+  //ctx = modbus_new_tcp("127.0.0.1", 502);
+  ctx = modbus_new_tcp(strIPAddress, 502);
   modbus_set_debug(ctx, TRUE);
 
   if (modbus_connect(ctx) == -1) {
