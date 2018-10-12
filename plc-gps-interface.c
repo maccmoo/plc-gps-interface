@@ -66,10 +66,19 @@
 #include <errno.h>
 #include <err.h>
 #include "sbp_callback_functions.h"
+#include <sys/socket.h>
+#include <arpa/inet.h>
+
 
 char strDummyInput[100];
 char *serial_port_name = NULL;
 struct sp_port *piksi_port = NULL;
+
+// objects for TCP/IP connection to Piksi Multi
+char *tcp_ip_addr = NULL;
+char *tcp_ip_port=NULL;
+int socket_desc =- 1;
+
 
 static sbp_msg_callbacks_node_t heartbeat_callback_node;
 static sbp_msg_callbacks_node_t base_pos_llh_callback_node;
@@ -220,10 +229,10 @@ void setup_port()
 }
 
 
-u32 piksi_port_read(u8 *buff, u32 n, void *context)
+s32 piksi_port_read(u8 *buff, u32 n, void *context)
 {
   (void)context;
-  u32 result;
+  s32 result;
 
   result = sp_blocking_read(piksi_port, buff, n, 0);
 
