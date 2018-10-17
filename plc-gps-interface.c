@@ -193,6 +193,34 @@ void usage(char *prog_name) {
   fprintf(stderr, "usage: %s [-p serial port] [ -b baud rate] \n", prog_name);
 }
 
+void setup_socket()
+{
+  struct sockaddr_in server;
+  socket_desc = socket(AF_INET , SOCK_STREAM , 0);
+  if (socket_desc == -1)
+  {
+    fprintf(stderr, "Could not create socket\n");
+  }
+
+  memset(&server, '0', sizeof(server));
+  server.sin_addr.s_addr = inet_addr(tcp_ip_addr);
+  server.sin_family = AF_INET;
+  server.sin_port = htons(atoi(tcp_ip_port));
+
+  if (connect(socket_desc, (struct sockaddr *)&server , sizeof(server)) < 0)
+  {
+    fprintf(stderr, "Connection error\n");
+  }
+}
+
+void close_socket()
+{
+  close(socket_desc);
+}
+
+
+
+
 void setup_port()
 {
   int result;
@@ -226,6 +254,15 @@ void setup_port()
     fprintf(stderr, "Cannot set stop bits!\n");
     exit(EXIT_FAILURE);
   }
+}
+
+s32 socket_read(u8 *buff, u32 n, void *context)
+{
+  (void)context;
+  s32 result;
+
+  result = read(socket_desc, buff, n);
+  return result;
 }
 
 
@@ -275,9 +312,9 @@ int main(int argc, char **argv)
   {
     switch (opt) {
       case 'm': // mode of communication - IP or serial
-          blnEthernetComms = 0; // disables ethernet communicationsand enables serial communications
-          fprintf(stdout, "ethernet disabled. comms will be over serial.\n");
-          break;
+        blnEthernetComms = 0; // disables ethernet communicationsand enables serial communications
+        fprintf(stdout, "ethernet disabled. comms will be over serial.\n");
+        break;
       case 'p': // obtain IP address or serial port depending on which is selected. default is ethernet
         
         if (blnEthernetComms) { // if communication method is ethernet
@@ -287,6 +324,7 @@ int main(int argc, char **argv)
             exit(EXIT_FAILURE);
           }
           strcpy(tcp_ip_addr, optarg);
+          fprintf(stdout, "IP address set to \"%s\"\n", tcp_ip_addr);
         }
         else { //  communication method is serial
           serial_port_name = (char *)calloc(strlen(optarg) + 1, sizeof(char));
@@ -295,31 +333,37 @@ int main(int argc, char **argv)
             exit(EXIT_FAILURE);
           }
           strcpy(serial_port_name, optarg);
+          fprintf(stdout, "serial port set to \"%s\"\n", serial_port_name);
         }
-            
+        break;    
       // additional communication parameter. if IP comms then this represents IP port. If serial comms then this represents baud rate
       // either way input should be a long
       case 'b': 
-        {
-           long l = -1;
-           l=strtol(optarg, 0, 10);
-
-           if ((!optarg) ||  (l <= 0))
-             { 
-                fprintf(stderr, "invalid baud rate under option -b  %s - expecting a number\n", 
-                optarg?optarg:"");
-                fprintf(stdout, "b\n");
-                usage(argv[0]);
-                exit(EXIT_FAILURE);
-             };
-           tcp_ip_port = (int) l;
-           intBaudRate = (int) l;
-        }
         if (blnEthernetComms) { // if communication method is ethernet
-          fprintf(stdout, "IP port set to %d\n\n", tcp_ip_port);
+          tcp_ip_port = (char *)calloc(strlen(optarg) + 1, sizeof(char));
+          if (!tcp_ip_port) {
+            fprintf(stderr, "Cannot allocate memory!\n");
+            exit(EXIT_FAILURE);
+          }
+          strcpy(tcp_ip_port, optarg);
+          fprintf(stdout, "IP port set to \"%s\"\n", tcp_ip_port);
         }
         else { //  communication method is serial
-          fprintf(stdout, "baud rate set to %d\n\n", intBaudRate);
+          {
+            long l = -1;
+            l=strtol(optarg, 0, 10);
+            if ((!optarg) ||  (l <= 0))
+            { 
+               fprintf(stderr, "invalid baud rate under option -b  %s - expecting a number\n", 
+               optarg?optarg:"");
+               fprintf(stdout, "b\n");
+               usage(argv[0]);
+               exit(EXIT_FAILURE);
+            }
+            intBaudRate = (int) l;
+
+            fprintf(stdout, "baud rate set to %d\n\n", intBaudRate);
+          }
         }
         break;
       case 'g': // if parameter is in existence, then disable GPS Time callback function
@@ -360,6 +404,9 @@ int main(int argc, char **argv)
     }
   }
 
+  
+  
+  
   fprintf(stdout, "Type any character and press enter to continue\n");
   scanf("%s", strDummyInput); // wait so we can read output
 
@@ -392,29 +439,42 @@ int main(int argc, char **argv)
   }
 
 
-  
-  
-  
-  if (!serial_port_name) {
-    fprintf(stderr, "Please supply the serial port path where the Piksi is " \
-                    "connected!\n");
-    exit(EXIT_FAILURE);
+  if (blnEthernetComms) {
+    
+    if (!tcp_ip_addr) {
+      fprintf(stderr, "Please supply the IP address of the SBP data stream!\n");
+      exit(EXIT_FAILURE);
+    }
+
+    if (!tcp_ip_port) {
+      fprintf(stderr, "Please supply the IP port of the SBP data stream!\n");
+      exit(EXIT_FAILURE);
+    }
+    
+    setup_socket();
   }
+  else {
+  
+    if (!serial_port_name) {
+      fprintf(stderr, "Please supply the serial port path where the Piksi is " \
+                      "connected!\n");
+      exit(EXIT_FAILURE);
+    }
 
-  result = sp_get_port_by_name(serial_port_name, &piksi_port);
-  if (result != SP_OK) {
-    fprintf(stderr, "Cannot find provided serial port!\n");
-    exit(EXIT_FAILURE);
+    result = sp_get_port_by_name(serial_port_name, &piksi_port);
+    if (result != SP_OK) {
+      fprintf(stderr, "Cannot find provided serial port!\n");
+      exit(EXIT_FAILURE);
+    }
+
+    result = sp_open(piksi_port, SP_MODE_READ);
+    if (result != SP_OK) {
+      fprintf(stderr, "Cannot open %s for reading!\n", serial_port_name);
+      exit(EXIT_FAILURE);
+    }
+
+    setup_port();
   }
-
-  result = sp_open(piksi_port, SP_MODE_READ);
-  if (result != SP_OK) {
-    fprintf(stderr, "Cannot open %s for reading!\n", serial_port_name);
-    exit(EXIT_FAILURE);
-  }
-
-  setup_port();
-
   sbp_state_init(&s);
 
   if ((blnPiksiOutputEnabled) && (blnHeartbeatEnabled))  {
@@ -457,12 +517,18 @@ int main(int argc, char **argv)
   }
 
 
-  while(1) {
-    sbp_process(&s, &piksi_port_read); // process requests from Piksi Multi
+  if (blnEthernetComms) {
+    while(1) {
+      sbp_process(&s, &socket_read); // process requests from Piksi Multi over Ethernet
+    }
+    close_socket();
+  }  
+  else {
+    while(1) {
+      sbp_process(&s, &piksi_port_read); // process requests from Piksi Multi over serial
+    }
   }
 
-  
   piksi_data_close(CurrentData);
-  
   return 0;
   }
