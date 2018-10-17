@@ -248,6 +248,7 @@ int main(int argc, char **argv)
   int intBaudRate = 115200;
   sbp_state_t s;
 
+  char blnEthernetComms = 1;
   char blnGPSTimeEnabled = 1;
   char blnIMUEnabled = 1;
   char blnUTCTimeEnabled = 1;
