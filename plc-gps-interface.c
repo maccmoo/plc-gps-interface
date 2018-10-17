@@ -270,19 +270,35 @@ int main(int argc, char **argv)
     exit(EXIT_FAILURE);
   }
 
-  while ((opt = getopt(argc, argv, "p:b:gufinvle")) != -1) 
+  while ((opt = getopt(argc, argv, "mp:b:gufinvle")) != -1) 
   {
     switch (opt) {
-      case 'p':
-        serial_port_name = (char *)calloc(strlen(optarg) + 1, sizeof(char));
-        if (!serial_port_name) {
-          fprintf(stderr, "Cannot allocate memory!\n");
-          exit(EXIT_FAILURE);
+      case 'm': // mode of communication - IP or serial
+          blnEthernetComms = 0; // disables ethernet communicationsand enables serial communications
+          fprintf(stdout, "ethernet disabled. comms will be over serial.\n");
+          break;
+      case 'p': // obtain IP address or serial port depending on which is selected. default is ethernet
+        
+        if (blnEthernetComms) { // if communication method is ethernet
+          tcp_ip_addr = (char *)calloc(strlen(optarg) + 1, sizeof(char));
+          if (!tcp_ip_addr) {
+            fprintf(stderr, "Cannot allocate memory!\n");
+            exit(EXIT_FAILURE);
+          }
+          strcpy(tcp_ip_addr, optarg);
         }
-        strcpy(serial_port_name, optarg);
-        fprintf(stdout, "serial port set to \"%s\"\n", serial_port_name);
-        break;
-      case 'b':
+        else { //  communication method is serial
+          serial_port_name = (char *)calloc(strlen(optarg) + 1, sizeof(char));
+          if (!serial_port_name) {
+            fprintf(stderr, "Cannot allocate memory!\n");
+            exit(EXIT_FAILURE);
+          }
+          strcpy(serial_port_name, optarg);
+        }
+            
+      // additional communication parameter. if IP comms then this represents IP port. If serial comms then this represents baud rate
+      // either way input should be a long
+      case 'b': 
         {
            long l = -1;
            l=strtol(optarg, 0, 10);
@@ -295,9 +311,15 @@ int main(int argc, char **argv)
                 usage(argv[0]);
                 exit(EXIT_FAILURE);
              };
+           tcp_ip_port = (int) l;
            intBaudRate = (int) l;
         }
-        fprintf(stdout, "baud rate set to %d\n\n", intBaudRate);
+        if (blnEthernetComms) { // if communication method is ethernet
+          fprintf(stdout, "IP port set to %d\n\n", tcp_ip_port);
+        }
+        else { //  communication method is serial
+          fprintf(stdout, "baud rate set to %d\n\n", intBaudRate);
+        }
         break;
       case 'g': // if parameter is in existence, then disable GPS Time callback function
         blnGPSTimeEnabled = 0; // disable GPS Time callback function
