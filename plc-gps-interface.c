@@ -67,10 +67,17 @@
 #include <err.h>
 #include "sbp_callback_functions.h"
 #include <slog.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 char strDummyInput[100];
 char *serial_port_name = NULL;
 struct sp_port *piksi_port = NULL;
+
+// objects for TCP/IP connection to Piksi Multi
+char *tcp_ip_addr = NULL;
+char *tcp_ip_port=NULL;
+int socket_desc =- 1;
 
 static sbp_msg_callbacks_node_t heartbeat_callback_node;
 static sbp_msg_callbacks_node_t base_pos_llh_callback_node;
@@ -134,7 +141,9 @@ int runModBusTcpServer(piksi_data_t *piksi_struct)
   int rc;
   int nPort = 502; // port number for modbus
   // we only need holding registers. will define a few of each other type just in case
+  fprintf(stdout, "creating modbus mapping\n");
   mb_mapping = modbus_mapping_new(1000, 1000, 10000, 1000);
+  fprintf(stdout, "modbus mapping complete\n");
   if (mb_mapping == NULL) {
       fprintf(stderr, "Failed to allocate the mapping: %s\n", modbus_strerror(errno));
       slog(0, SLOG_ERROR, "Failed to allocate the mapping: %s\n", modbus_strerror(errno));
@@ -144,7 +153,10 @@ int runModBusTcpServer(piksi_data_t *piksi_struct)
 
   fprintf(stdout, "Waiting for TCP connection on Port %i \n",nPort);
   slog(0, SLOG_INFO, "Waiting for TCP connection on Port %i \n",nPort);
+
+  fprintf(stdout, "binding to all tcp ports\n");
   ctx = modbus_new_tcp("0.0.0.0", nPort); // 0.0.0.0 means to listen on all IP addresses
+  fprintf(stdout, "all tcp ports bound\n");
   //modbus_set_debug(ctx, TRUE);
   
   socket = modbus_tcp_listen(ctx, 1);
@@ -156,14 +168,20 @@ int runModBusTcpServer(piksi_data_t *piksi_struct)
   {
     uint8_t query[MODBUS_TCP_MAX_ADU_LENGTH];
 
+    //fprintf(stdout, "call modbus_receive\n");
     rc = modbus_receive(ctx, query);
+    //fprintf(stdout, "modbus_receive called\n");
     if (rc >= 0) 
     {
+      //fprintf(stdout, "rc >=0. request received. about to update registers from structure\n");
+
       //fprintf(fLogFile, "from modbus registers: week number/tow => %d/%d\n", mb_mapping->tab_registers[reg_MSG_GPS_TIME_wn], MODBUS_GET_INT32_FROM_INT16(mb_mapping -> tab_registers, reg_MSG_GPS_TIME_tow) );
       //fprintf(fLogFile, "struct: week number/tow => %d/%d\n", piksi_struct->GPS_time_data->wn, piksi_struct->GPS_time_data->tow);
       
       updateRegistersFromStruct(piksi_struct, mb_mapping); // request received. populate registers from structure
+      //fprintf(stdout, "registers udpated from structure. now call modbus_reply\n");
       modbus_reply(ctx, query, rc, mb_mapping);
+      //fprintf(stdout, "modbus_reply\n");
     } 
     else 
     {
@@ -189,6 +207,34 @@ void usage(char *prog_name) {
   fprintf(stderr, "usage: %s [-p serial port] [ -b baud rate] \n", prog_name);
   slog(0, SLOG_ERROR, "usage: %s [-p serial port] [ -b baud rate] \n", prog_name);
 }
+
+void setup_socket()
+{
+  struct sockaddr_in server;
+  socket_desc = socket(AF_INET , SOCK_STREAM , 0);
+  if (socket_desc == -1)
+  {
+    fprintf(stderr, "Could not create socket\n");
+  }
+
+  memset(&server, '0', sizeof(server));
+  server.sin_addr.s_addr = inet_addr(tcp_ip_addr);
+  server.sin_family = AF_INET;
+  server.sin_port = htons(atoi(tcp_ip_port));
+
+  if (connect(socket_desc, (struct sockaddr *)&server , sizeof(server)) < 0)
+  {
+    fprintf(stderr, "Connection error\n");
+  }
+}
+
+void close_socket()
+{
+  close(socket_desc);
+}
+
+
+
 
 void setup_port()
 {
@@ -231,10 +277,21 @@ void setup_port()
 }
 
 
-u32 piksi_port_read(u8 *buff, u32 n, void *context)
+
+s32 socket_read(u8 *buff, u32 n, void *context)
 {
   (void)context;
-  u32 result;
+  s32 result;
+
+  result = read(socket_desc, buff, n);
+  return result;
+}
+
+
+s32 piksi_port_read(u8 *buff, u32 n, void *context)
+{
+  (void)context;
+  s32 result;
 
   result = sp_blocking_read(piksi_port, buff, n, 0);
 
@@ -250,6 +307,7 @@ int main(int argc, char **argv)
   int intBaudRate = 115200;
   sbp_state_t s;
 
+  char blnEthernetComms = 1;
   char blnGPSTimeEnabled = 1;
   char blnIMUEnabled = 1;
   char blnUTCTimeEnabled = 1;
@@ -260,7 +318,8 @@ int main(int argc, char **argv)
   char blnPiksiOutputEnabled=1;
   char blnHeartbeatEnabled = 1;
   
-  slog_init("plc-gps-interface", "slog.cfg", 1, 3, 1);
+  slog_init("plc-gps-interface", "slog.cfg", 1, 1);
+//  slog_init("plc-gps-interface", "slog.cfg", 1, 3, 1);
   slog(0, SLOG_INFO, "Opening logging file");
    fp = fopen ("file.txt", "a+");
    fprintf(fp, "%s %s %s %d\n", "We", "are", "in", 2012);
@@ -294,7 +353,70 @@ int main(int argc, char **argv)
   while ((opt = getopt(argc, argv, "p:b:gufinvle")) != -1) 
   {
     switch (opt) {
-      case 'p':
+      case 'm': // mode of communication - IP or serial
+        blnEthernetComms = 0; // disables ethernet communicationsand enables serial communications
+        fprintf(stdout, "ethernet disabled. comms will be over serial.\n");
+        break;
+      case 'p': // obtain IP address or serial port depending on which is selected. default is ethernet
+        
+        if (blnEthernetComms) { // if communication method is ethernet
+          tcp_ip_addr = (char *)calloc(strlen(optarg) + 1, sizeof(char));
+          if (!tcp_ip_addr) {
+            fprintf(stderr, "Cannot allocate memory!\n");
+            slog(0, SLOG_ERROR, "Cannot allocate memory!\n");
+            exit(EXIT_FAILURE);
+          }
+          strcpy(tcp_ip_addr, optarg);
+          fprintf(stdout, "IP address set to \"%s\"\n", tcp_ip_addr);
+          slog(0, SLOG_INFO, "IP address set to \"%s\"\n", tcp_ip_addr);
+        }
+        else { //  communication method is serial
+          serial_port_name = (char *)calloc(strlen(optarg) + 1, sizeof(char));
+          if (!serial_port_name) {
+            fprintf(stderr, "Cannot allocate memory!\n");
+            slog(0, SLOG_ERROR, "Cannot allocate memory!\n");
+            exit(EXIT_FAILURE);
+          }
+          strcpy(serial_port_name, optarg);
+          fprintf(stdout, "serial port set to \"%s\"\n", serial_port_name);
+          slog(0, SLOG_INFO, "serial port set to \"%s\"\n", serial_port_name);
+        }
+        break;    
+      // additional communication parameter. if IP comms then this represents IP port. If serial comms then this represents baud rate
+      // either way input should be a long
+      case 'b': 
+        if (blnEthernetComms) { // if communication method is ethernet
+          tcp_ip_port = (char *)calloc(strlen(optarg) + 1, sizeof(char));
+          if (!tcp_ip_port) {
+            fprintf(stderr, "Cannot allocate memory!\n");
+            slog(0, SLOG_ERROR, "Cannot allocate memory!\n");
+            exit(EXIT_FAILURE);
+          }
+          strcpy(tcp_ip_port, optarg);
+          fprintf(stdout, "IP port set to \"%s\"\n", tcp_ip_port);
+          slog(0, SLOG_INFO, "IP port set to \"%s\"\n", tcp_ip_port);
+        }
+        else { //  communication method is serial
+          {
+            long l = -1;
+            l=strtol(optarg, 0, 10);
+            if ((!optarg) ||  (l <= 0))
+            { 
+               fprintf(stderr, "invalid baud rate under option -b  %s - expecting a number\n", optarg?optarg:"");
+               slog(0, SLOG_ERROR, "invalid baud rate under option -b  %s - expecting a number\n", optarg?optarg:"");
+
+               fprintf(stdout, "b\n");
+               usage(argv[0]);
+               exit(EXIT_FAILURE);
+            }
+            intBaudRate = (int) l;
+
+            fprintf(stdout, "baud rate set to %d\n\n", intBaudRate);
+            slog(0, SLOG_INFO, "baud rate set to %d\n\n", intBaudRate);
+          }
+        }
+        break;
+/*      case 'p':
         serial_port_name = (char *)calloc(strlen(optarg) + 1, sizeof(char));
         if (!serial_port_name) {
           fprintf(stderr, "Cannot allocate memory!\n");
@@ -305,6 +427,7 @@ int main(int argc, char **argv)
         fprintf(stdout, "serial port set to \"%s\"\n", serial_port_name);
         slog(0, SLOG_INFO, "serial port set to \"%s\"\n", serial_port_name);
         break;
+        
       case 'b':
         {
            long l = -1;
@@ -325,6 +448,7 @@ int main(int argc, char **argv)
         fprintf(stdout, "baud rate set to %d\n\n", intBaudRate);
         slog(0, SLOG_INFO, "baud rate set to %d\n\n", intBaudRate);
         break;
+        */
       case 'g': // if parameter is in existence, then disable GPS Time callback function
         blnGPSTimeEnabled = 0; // disable GPS Time callback function
         fprintf(stdout, "GPS Time disabled\n");
@@ -371,8 +495,8 @@ int main(int argc, char **argv)
     }
   }
 
-//  fprintf(stdout, "Type any character and press enter to continue\n");
-//  scanf("%s", strDummyInput); // wait so we can read output
+  //fprintf(stdout, "Type any character and press enter to continue\n");
+  //scanf("%s", strDummyInput); // wait so we can read output
 
   
   switch ((childpid = fork())) 
@@ -387,7 +511,8 @@ int main(int argc, char **argv)
         
     
     
-    
+    fprintf(stdout, "about to call function runModBusTcpServer\n");
+
     runModBusTcpServer(CurrentData);
     /*while(1)
     {
@@ -402,35 +527,50 @@ int main(int argc, char **argv)
     //munmap(anon, sizeof(piksi_ned_data));
     piksi_data_close(CurrentData);
     return EXIT_SUCCESS;
-  }
-
-
+  } // end of child process
   
+
+
+  if (blnEthernetComms) {
+    
+    if (!tcp_ip_addr) {
+      fprintf(stderr, "Please supply the IP address of the SBP data stream!\n");
+      exit(EXIT_FAILURE);
+    }
+
+    if (!tcp_ip_port) {
+      fprintf(stderr, "Please supply the IP port of the SBP data stream!\n");
+      exit(EXIT_FAILURE);
+    }
+    
+    setup_socket();
+  }
+  else {
   
+    if (!serial_port_name) {
+      fprintf(stderr, "Please supply the serial port path where the Piksi is connected!\n");
+      slog(0, SLOG_ERROR, "Please supply the serial port path where the Piksi is connected!\n");
+          
+      exit(EXIT_FAILURE);
+    }
+
+    result = sp_get_port_by_name(serial_port_name, &piksi_port);
+    if (result != SP_OK) {
+      fprintf(stderr, "Cannot find provided serial port!\n");
+      slog(0, SLOG_ERROR, "Cannot find provided serial port!\n");
+      exit(EXIT_FAILURE);
+    }
+
+    result = sp_open(piksi_port, SP_MODE_READ);
+    if (result != SP_OK) {
+      fprintf(stderr, "Cannot open %s for reading!\n", serial_port_name);
+      slog(0, SLOG_ERROR, "Cannot open %s for reading!\n", serial_port_name);
+      exit(EXIT_FAILURE);
+    }
+
+    setup_port();
+  }
   
-  if (!serial_port_name) {
-    fprintf(stderr, "Please supply the serial port path where the Piksi is connected!\n");
-    slog(0, SLOG_ERROR, "Please supply the serial port path where the Piksi is connected!\n");
-        
-    exit(EXIT_FAILURE);
-  }
-
-  result = sp_get_port_by_name(serial_port_name, &piksi_port);
-  if (result != SP_OK) {
-    fprintf(stderr, "Cannot find provided serial port!\n");
-    slog(0, SLOG_ERROR, "Cannot find provided serial port!\n");
-    exit(EXIT_FAILURE);
-  }
-
-  result = sp_open(piksi_port, SP_MODE_READ);
-  if (result != SP_OK) {
-    fprintf(stderr, "Cannot open %s for reading!\n", serial_port_name);
-    slog(0, SLOG_ERROR, "Cannot open %s for reading!\n", serial_port_name);
-    exit(EXIT_FAILURE);
-  }
-
-  setup_port();
-
   sbp_state_init(&s);
 
   if ((blnPiksiOutputEnabled) && (blnHeartbeatEnabled))  {
@@ -473,9 +613,18 @@ int main(int argc, char **argv)
   }
 
 
-  while(1) {
-    sbp_process(&s, &piksi_port_read); // process requests from Piksi Multi
+  if (blnEthernetComms) {
+    while(1) {
+      sbp_process(&s, &socket_read); // process requests from Piksi Multi over Ethernet
+    }
+    close_socket();
+  }  
+  else {
+    while(1) {
+      sbp_process(&s, &piksi_port_read); // process requests from Piksi Multi over serial
+    }
   }
+
 
   
   piksi_data_close(CurrentData);

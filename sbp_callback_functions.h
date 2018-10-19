@@ -35,7 +35,7 @@ typedef struct {
   msg_baseline_ned_t *baseline_NED_data;
   msg_vel_ecef_t *ECEF_velocity_data;
   msg_vel_ned_t *NED_velocity_data;
-  msg_baseline_heading_t *baseline_heading_data;
+  msg_baseline_heading_dep_a_t *baseline_heading_data;
   msg_age_corrections_t *age_corrections_data;
   msg_base_pos_llh_t *base_position_llh_data;
   msg_base_pos_ecef_t *base_position_ecef_data;
