@@ -35,10 +35,23 @@
 #define reg_MSG_IMU_RAW_gyr_y 155
 #define reg_MSG_IMU_RAW_gyr_z 156
 
+#define reg_MSG_POS_ECEF_tow 157
+#define reg_MSG_POS_ECEF_x 159
+#define reg_MSG_POS_ECEF_y 163
+#define reg_MSG_POS_ECEF_z 167
+#define reg_MSG_POS_ECEF_accuracy 171
+#define reg_MSG_POS_ECEF_n_sats 172
+#define reg_MSG_POS_ECEF_flags 173
+#define reg_MSG_BASELINE_ECEF_tow 174
+#define reg_MSG_BASELINE_ECEF_x 176
+#define reg_MSG_BASELINE_ECEF_y 178
+#define reg_MSG_BASELINE_ECEF_z 180
+#define reg_MSG_BASELINE_ECEF_accuracy 182
+#define reg_MSG_BASELINE_ECEF_n_sats 183
+#define reg_MSG_BASELINE_ECEF_flags 184
 
-
-// this macro is defined in libmodbus 3.14, but not in 3.06. as it is very useful, 
-// I will define it here with an ifndef which "should" not break if we upgrade to 3.14
+// this macro is defined in libmodbus 3.14, but not in 3.06. 
+// As it is very useful, I will define it here with an ifndef which "should" not break if we upgrade to 3.14
 #ifndef MODBUS_SET_INT32_TO_INT16 
 # define MODBUS_SET_INT32_TO_INT16(tab_int16, index, value) \
     do { \
@@ -74,6 +87,7 @@ char strDummyInput[100];
 char *serial_port_name = NULL;
 struct sp_port *piksi_port = NULL;
 
+
 // objects for TCP/IP connection to Piksi Multi
 char *tcp_ip_addr = NULL;
 char *tcp_ip_port=NULL;
@@ -88,14 +102,22 @@ static sbp_msg_callbacks_node_t gps_time_callback_node;
 static sbp_msg_callbacks_node_t utc_time_callback_node;
 static sbp_msg_callbacks_node_t imu_raw_callback_node;
 
+static sbp_msg_callbacks_node_t baseline_ecef_callback_node;
+static sbp_msg_callbacks_node_t pos_ecef_callback_node;
+
 
 
 int updateRegistersFromStruct(piksi_data_t *piksi_struct, modbus_mapping_t *mb_mapping)
 {
   mb_mapping->tab_registers[reg_MSG_GPS_TIME_wn] = piksi_struct->GPS_time_data->wn;
+  
+  
+  // gps time data
   MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_GPS_TIME_tow, piksi_struct->GPS_time_data->tow);
   MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_GPS_TIME_ns_residual, piksi_struct->GPS_time_data->ns_residual);
   mb_mapping->tab_registers[reg_MSG_GPS_TIME_flags] = piksi_struct->GPS_time_data->flags;
+  
+  // baseline NED data
   MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_BASELINE_NED_tow, piksi_struct->baseline_NED_data->tow);
   MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_BASELINE_NED_n, piksi_struct->baseline_NED_data->n);
   MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_BASELINE_NED_e, piksi_struct->baseline_NED_data->e);
@@ -104,14 +126,27 @@ int updateRegistersFromStruct(piksi_data_t *piksi_struct, modbus_mapping_t *mb_m
   mb_mapping->tab_registers[reg_MSG_BASELINE_NED_v_accuracy] = piksi_struct->baseline_NED_data->v_accuracy;
   mb_mapping->tab_registers[reg_MSG_BASELINE_NED_n_sats] = piksi_struct->baseline_NED_data->n_sats;
   mb_mapping->tab_registers[reg_MSG_BASELINE_NED_flags] = piksi_struct->baseline_NED_data->flags;
+
+  // LLH data
   MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_POS_LLH_tow, piksi_struct->LLH_data->tow);
   mb_mapping->tab_registers[reg_MSG_POS_LLH_lat] = 0; // temporarily set to 0 till 64 bit float support is implemented
+  mb_mapping->tab_registers[reg_MSG_POS_LLH_lat+1] = 0; 
+  mb_mapping->tab_registers[reg_MSG_POS_LLH_lat+2] = 0; 
+  mb_mapping->tab_registers[reg_MSG_POS_LLH_lat+3] = 0; 
   mb_mapping->tab_registers[reg_MSG_POS_LLH_lon] = 0; // temporarily set to 0 till 64 bit float support is implemented
+  mb_mapping->tab_registers[reg_MSG_POS_LLH_lon+1] = 0; 
+  mb_mapping->tab_registers[reg_MSG_POS_LLH_lon+2] = 0; 
+  mb_mapping->tab_registers[reg_MSG_POS_LLH_lon+3] = 0; 
   mb_mapping->tab_registers[reg_MSG_POS_LLH_height] = 0; // temporarily set to 0 till 64 bit float support is implemented
+  mb_mapping->tab_registers[reg_MSG_POS_LLH_height+1] = 0; 
+  mb_mapping->tab_registers[reg_MSG_POS_LLH_height+2] = 0; 
+  mb_mapping->tab_registers[reg_MSG_POS_LLH_height+3] = 0; 
   mb_mapping->tab_registers[reg_MSG_POS_LLH_h_accuracy] = piksi_struct->LLH_data->h_accuracy;
   mb_mapping->tab_registers[reg_MSG_POS_LLH_v_accuracy] = piksi_struct->LLH_data->v_accuracy;
   mb_mapping->tab_registers[reg_MSG_POS_LLH_n_sats] = piksi_struct->LLH_data->n_sats;
   mb_mapping->tab_registers[reg_MSG_POS_LLH_flags] = piksi_struct->LLH_data->flags;
+  
+  // baseline NED VELOCITY data
   MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_VEL_NED_tow, piksi_struct->NED_velocity_data->tow);
   MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_VEL_NED_n, piksi_struct->NED_velocity_data->n);
   MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_VEL_NED_e, piksi_struct->NED_velocity_data->e);
@@ -120,6 +155,8 @@ int updateRegistersFromStruct(piksi_data_t *piksi_struct, modbus_mapping_t *mb_m
   mb_mapping->tab_registers[reg_MSG_VEL_NED_v_accuracy] = piksi_struct->NED_velocity_data->v_accuracy;
   mb_mapping->tab_registers[reg_MSG_VEL_NED_n_sats] = piksi_struct->NED_velocity_data->n_sats;
   mb_mapping->tab_registers[reg_MSG_VEL_NED_flags] = piksi_struct->NED_velocity_data->flags;
+  
+  // raw IMU data
   MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_IMU_RAW_tow, piksi_struct->IMU_data->tow);
   mb_mapping->tab_registers[reg_MSG_IMU_RAW_tow_f] = piksi_struct->IMU_data->tow_f;
   mb_mapping->tab_registers[reg_MSG_IMU_RAW_acc_x] = piksi_struct->IMU_data->acc_x;
@@ -129,6 +166,34 @@ int updateRegistersFromStruct(piksi_data_t *piksi_struct, modbus_mapping_t *mb_m
   mb_mapping->tab_registers[reg_MSG_IMU_RAW_gyr_y] = piksi_struct->IMU_data->gyr_y;
   mb_mapping->tab_registers[reg_MSG_IMU_RAW_gyr_z] = piksi_struct->IMU_data->gyr_z;
 
+  // pos ECEF data
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_POS_ECEF_tow, piksi_struct->ECEF_data->tow);
+  mb_mapping->tab_registers[reg_MSG_POS_ECEF_x] = 0; // temporarily set to 0 till 64 bit float support is implemented
+  mb_mapping->tab_registers[reg_MSG_POS_ECEF_x+1] = 0; 
+  mb_mapping->tab_registers[reg_MSG_POS_ECEF_x+2] = 0; 
+  mb_mapping->tab_registers[reg_MSG_POS_ECEF_x+3] = 0; 
+  mb_mapping->tab_registers[reg_MSG_POS_ECEF_y] = 0; // temporarily set to 0 till 64 bit float support is implemented
+  mb_mapping->tab_registers[reg_MSG_POS_ECEF_y+1] = 0; 
+  mb_mapping->tab_registers[reg_MSG_POS_ECEF_y+2] = 0; 
+  mb_mapping->tab_registers[reg_MSG_POS_ECEF_y+3] = 0; 
+  mb_mapping->tab_registers[reg_MSG_POS_ECEF_z] = 0; // temporarily set to 0 till 64 bit float support is implemented
+  mb_mapping->tab_registers[reg_MSG_POS_ECEF_z+1] = 0; 
+  mb_mapping->tab_registers[reg_MSG_POS_ECEF_z+2] = 0; 
+  mb_mapping->tab_registers[reg_MSG_POS_ECEF_z+3] = 0; 
+  mb_mapping->tab_registers[reg_MSG_POS_ECEF_accuracy] = piksi_struct->ECEF_data->accuracy;
+  mb_mapping->tab_registers[reg_MSG_POS_ECEF_n_sats] = piksi_struct->ECEF_data->n_sats;
+  mb_mapping->tab_registers[reg_MSG_POS_ECEF_flags] = piksi_struct->ECEF_data->flags;
+
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_BASELINE_ECEF_tow, piksi_struct->baseline_ECEF_data->tow);
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_BASELINE_ECEF_x, piksi_struct->baseline_ECEF_data->x);
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_BASELINE_ECEF_y, piksi_struct->baseline_ECEF_data->y);
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_BASELINE_ECEF_z, piksi_struct->baseline_ECEF_data->z);
+  mb_mapping->tab_registers[reg_MSG_BASELINE_ECEF_accuracy] = piksi_struct->baseline_ECEF_data->accuracy;
+  mb_mapping->tab_registers[reg_MSG_BASELINE_ECEF_n_sats] = piksi_struct->baseline_ECEF_data->n_sats;
+  mb_mapping->tab_registers[reg_MSG_BASELINE_ECEF_flags] = piksi_struct->baseline_ECEF_data->flags;
+
+
+  
   return 0;
 }
 
@@ -168,20 +233,11 @@ int runModBusTcpServer(piksi_data_t *piksi_struct)
   {
     uint8_t query[MODBUS_TCP_MAX_ADU_LENGTH];
 
-    //fprintf(stdout, "call modbus_receive\n");
     rc = modbus_receive(ctx, query);
-    //fprintf(stdout, "modbus_receive called\n");
     if (rc >= 0) 
     {
-      //fprintf(stdout, "rc >=0. request received. about to update registers from structure\n");
-
-      //fprintf(fLogFile, "from modbus registers: week number/tow => %d/%d\n", mb_mapping->tab_registers[reg_MSG_GPS_TIME_wn], MODBUS_GET_INT32_FROM_INT16(mb_mapping -> tab_registers, reg_MSG_GPS_TIME_tow) );
-      //fprintf(fLogFile, "struct: week number/tow => %d/%d\n", piksi_struct->GPS_time_data->wn, piksi_struct->GPS_time_data->tow);
-      
       updateRegistersFromStruct(piksi_struct, mb_mapping); // request received. populate registers from structure
-      //fprintf(stdout, "registers udpated from structure. now call modbus_reply\n");
-      modbus_reply(ctx, query, rc, mb_mapping);
-      //fprintf(stdout, "modbus_reply\n");
+      modbus_reply(ctx, query, rc, mb_mapping); // respond to request
     } 
     else 
     {
@@ -307,6 +363,7 @@ int main(int argc, char **argv)
   int intBaudRate = 115200;
   sbp_state_t s;
 
+
   char blnEthernetComms = 1;
   char blnGPSTimeEnabled = 1;
   char blnIMUEnabled = 1;
@@ -314,29 +371,17 @@ int main(int argc, char **argv)
   char blnBasePosEnabled = 1;
   char blnLLHPosEnabled = 1;
   char blnBaseNEDEnabled = 1;
+  char blnECEFEnabled = 1;
   char blnVelNEDEnabled = 1;
   char blnPiksiOutputEnabled=1;
   char blnHeartbeatEnabled = 1;
-  
-  slog_init("plc-gps-interface", "slog.cfg", 1, 1);
-//  slog_init("plc-gps-interface", "slog.cfg", 1, 3, 1);
+
+  blnDebugToScreen = 1;
+//  slog_init("plc-gps-interface", "slog.cfg", 1, 1);
+  slog_init("plc-gps-interface", "slog.cfg", 1, 3, 1);
   slog(0, SLOG_INFO, "Opening logging file");
-   fp = fopen ("file.txt", "a+");
-   fprintf(fp, "%s %s %s %d\n", "We", "are", "in", 2012);
-   fflush(fp);
-   //fclose(fp);
   
   
-  // fLogFile = fopen("/home/pi/git_repo/plc-gps-interface/plc-gps-interface.log", "a+"); // a+ (create + append) option will allow appending which is useful in a log file
-  // if (fLogFile == NULL) 
-  // {
-    // fprintf(stderr, "Something has gone wrong opening log file.\n");
-  // }
-  
-  // fprintf(stdout, "Opening log file\n");
-  // fprintf(fp, "Opening log file\n");
-  // fflush(fp);
-  //fclose(fLogFile);
   int parpid = getpid(), childpid;
   fprintf(stdout, "parent processID=%d\n", parpid);
   slog(0, SLOG_INFO, "parent processID=%d\n", parpid);
@@ -346,11 +391,10 @@ int main(int argc, char **argv)
   
   if (argc <= 1) {
     usage(argv[0]);
-    // fprintf(stdout, "a\n");
     exit(EXIT_FAILURE);
   }
 
-  while ((opt = getopt(argc, argv, "p:b:gufinvle")) != -1) 
+  while ((opt = getopt(argc, argv, "p:b:gufinvlead")) != -1) 
   {
     switch (opt) {
       case 'm': // mode of communication - IP or serial
@@ -479,15 +523,25 @@ int main(int argc, char **argv)
         fprintf(stdout, "Baseline NED Rover coordinate collection disabled\n");
         slog(0, SLOG_INFO, "Baseline NED Rover coordinate collection disabled\n");
         break;
+      case 'e': // if parameter is in existence, then disable all ECEF callback functions
+        blnECEFEnabled = 0; // disable disable all ECEF callback functions
+        fprintf(stdout, "all ECEF coordinate collection disabled\n");
+        slog(0, SLOG_INFO, "all ECEF coordinate collection disabled\n");
+        break;
       case 'v': // if parameter is in existence, then disable velocity rover NED callback function
         blnVelNEDEnabled = 0; // disable velocity rover NED callback function
         fprintf(stdout, "NED velocity collection disabled\n");
         slog(0, SLOG_INFO, "NED velocity collection disabled\n");
         break;
-      case 'e': // if parameter is in existence, then disable heartbeat callback function
+      case 'a': // if parameter is in existence, then disable heartbeat callback function
         blnHeartbeatEnabled = 0; // disable heartbeat callback function
         fprintf(stdout, "heartbeat collection disabled\n");
         slog(0, SLOG_INFO, "heartbeat collection disabled\n");
+        break;
+      case 'd': // if parameter is in existence, then send info and debug messages to screen
+        blnDebugToScreen = 13; // enable debug to screen
+        fprintf(stdout, "info and debug messages enabled to screen\n");
+        slog(0, SLOG_INFO, "info and debug messages enabled to screen\n");
         break;
       /*case 'h':
         usage(argv[0]);
@@ -509,22 +563,11 @@ int main(int argc, char **argv)
     fprintf(stdout, "child PID %d\n", childpid);
     slog(0, SLOG_INFO, "child PID %d\n", childpid);
         
-    
-    
-    fprintf(stdout, "about to call function runModBusTcpServer\n");
-
     runModBusTcpServer(CurrentData);
-    /*while(1)
-    {
-      usleep(100000);
-      fprintf(stdout, ".\n");
-    }*/
-    
     
     fprintf(stdout, "terminating child process PID %d\n", childpid);
     slog(0, SLOG_INFO, "terminating child process PID %d\n", childpid);
         
-    //munmap(anon, sizeof(piksi_ned_data));
     piksi_data_close(CurrentData);
     return EXIT_SUCCESS;
   } // end of child process
@@ -573,6 +616,8 @@ int main(int argc, char **argv)
   
   sbp_state_init(&s);
 
+  // register callback functions for each sbp message we wish to process
+  
   if ((blnPiksiOutputEnabled) && (blnHeartbeatEnabled))  {
   sbp_register_callback(&s, SBP_MSG_HEARTBEAT, &heartbeat_callback, (void*)CurrentData,
                         &heartbeat_callback_node);
@@ -598,18 +643,31 @@ int main(int argc, char **argv)
   }
 
   if ((blnPiksiOutputEnabled) && (blnGPSTimeEnabled)) {
-  sbp_register_callback(&s, SBP_MSG_GPS_TIME, &gps_time_callback, (void*)CurrentData,
+	sbp_register_callback(&s, SBP_MSG_GPS_TIME, &gps_time_callback, (void*)CurrentData,
                         &gps_time_callback_node);
+	fprintf(stdout, "registering gps_time_callback\n");
   }
 						
   if ((blnPiksiOutputEnabled) && (blnUTCTimeEnabled)) {
-  sbp_register_callback(&s, SBP_MSG_UTC_TIME, &utc_time_callback, (void*)CurrentData,
+	sbp_register_callback(&s, SBP_MSG_UTC_TIME, &utc_time_callback, (void*)CurrentData,
                         &utc_time_callback_node);
   }
 
   if ((blnPiksiOutputEnabled) && (blnIMUEnabled)) {
     sbp_register_callback(&s, SBP_MSG_IMU_RAW, &imu_raw_callback, (void*)CurrentData,
                           &imu_raw_callback_node);
+  }
+
+  if ((blnPiksiOutputEnabled) && (blnECEFEnabled)) {
+    sbp_register_callback(&s, SBP_MSG_BASELINE_ECEF, &baseline_ecef_callback, (void*)CurrentData,
+                          &baseline_ecef_callback_node);
+	fprintf(stdout, "registering baseline_ecef_callback\n");
+  }
+
+  if ((blnPiksiOutputEnabled) && (blnECEFEnabled)) {
+    sbp_register_callback(&s, SBP_MSG_POS_ECEF, &pos_ecef_callback, (void*)CurrentData,
+                          &pos_ecef_callback_node);
+	fprintf(stdout, "registering pos_ecef_callback\n");
   }
 
 
@@ -629,5 +687,8 @@ int main(int argc, char **argv)
   
   piksi_data_close(CurrentData);
   //fclose(fLogFile);
+  //free(tcp_ip_addr);
+  //free(tcp_ip_port);
+  //free(serial_port_name);
   return 0;
   }

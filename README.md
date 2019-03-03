@@ -44,3 +44,16 @@ mkdir build
 cd build
 cmake ../
 make
+
+
+enable to run without root priveleges (enable port 502 to non-priveleged user, see https://debian-administration.org/article/386/Running_network_services_as_a_non-root_user.)
+
+sudo apt-get install authbind
+sudo touch /etc/authbind/byport/502
+sudo chown pi:pi /etc/authbind/byport/502
+sudo chmod 755 /etc/authbind/byport/502
+
+prefix the command with authbind to give priveleges of binding port 502:
+authbind ./plc-gps-interface -p 192.168.1.35 -b 55555
+
+

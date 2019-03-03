@@ -20,11 +20,6 @@
 typedef struct {
   // see definition of SBP protocol at https://github.com/swift-nav/libsbp/blob/master/docs/sbp.pdf
 
-  // populated from SBP message MSG_GPS_TIME
-  // uint16_t weeks; // # of weeks since unix epoch MSG_GPS_TIME
-  // uint32_t tow; // time of week. 
-  // int32_t ns_residual; // residual nanoseconds for precise time
-  
   msg_startup_t *STARTUP_data;
   msg_log_t *LOG_data;
   msg_gps_time_t *GPS_time_data;
@@ -50,7 +45,7 @@ int piksi_data_setup(piksi_data_t *piksidata);
 int piksi_data_close(piksi_data_t *piksidata);
 FILE * fp;
 FILE *fLogFile;
-
+char blnDebugToScreen;
 
 void heartbeat_callback(u16 sender_id, u8 len, u8 msg[], void *context);
 
@@ -67,6 +62,11 @@ void gps_time_callback(u16 sender_id, u8 len, u8 msg[], void *context);
 void utc_time_callback(u16 sender_id, u8 len, u8 msg[], void *context);
 
 void imu_raw_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+
+void baseline_ecef_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+
+void pos_ecef_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+
 
 
 #endif

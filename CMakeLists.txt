@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.9)
 project (plc-gps-interface)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-set(CMAKE_C_FLAGS "-pthread -Wall -Wextra -Wno-strict-prototypes -Wno-unknown-warning-option -Werror -std=gnu99 ${CMAKE_C_FLAGS}")
+set(CMAKE_C_FLAGS "-pthread -g -Wall -Wextra -Wno-strict-prototypes -Wno-unknown-warning-option -Werror -std=gnu99 ${CMAKE_C_FLAGS}")
 
 add_library(sbp_callback_functions sbp_callback_functions.c)
 add_library(cJSON cJSON.c)

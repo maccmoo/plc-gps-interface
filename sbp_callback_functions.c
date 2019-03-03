@@ -2,25 +2,16 @@
 
 int piksi_data_setup(piksi_data_t *piksidata)
 {
-  //piksidata = calloc(1, sizeof (*piksidata));
   
-    piksi_data_t *CurrentData = (piksi_data_t *)mmap(NULL, sizeof(*CurrentData), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
-  //piksi_data_t *CurrentData = calloc(1, sizeof(*CurrentData));
+  piksi_data_t *CurrentData     = (piksi_data_t *)       mmap(NULL, sizeof(*CurrentData),                  PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksidata->GPS_time_data      = (msg_gps_time_t *)     mmap(NULL, sizeof(piksidata->GPS_time_data),      PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksidata->baseline_NED_data  = (msg_baseline_ned_t *) mmap(NULL, sizeof(piksidata->baseline_NED_data),  PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksidata->LLH_data           = (msg_pos_llh_t *)      mmap(NULL, sizeof(piksidata->LLH_data),           PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksidata->NED_velocity_data  = (msg_vel_ned_t *)      mmap(NULL, sizeof(piksidata->NED_velocity_data),  PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksidata->IMU_data           = (msg_imu_raw_t *)      mmap(NULL, sizeof(piksidata->IMU_data),           PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksidata->ECEF_data          = (msg_pos_ecef_t *)     mmap(NULL, sizeof(piksidata->ECEF_data),          PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksidata->baseline_ECEF_data = (msg_baseline_ecef_t *)mmap(NULL, sizeof(piksidata->baseline_ECEF_data), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
 
-  
-  piksidata->GPS_time_data = (msg_gps_time_t *)mmap(NULL, sizeof(piksidata->GPS_time_data), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
-  piksidata->baseline_NED_data = (msg_baseline_ned_t *)mmap(NULL, sizeof(piksidata->baseline_NED_data), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
-  piksidata->LLH_data = (msg_pos_llh_t *)mmap(NULL, sizeof(piksidata->LLH_data), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
-  piksidata->NED_velocity_data = (msg_vel_ned_t *)mmap(NULL, sizeof(piksidata->NED_velocity_data), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
-  piksidata->IMU_data = (msg_imu_raw_t *)mmap(NULL, sizeof(piksidata->IMU_data), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
-
-  // piksidata->GPS_time_data = calloc(1, sizeof(piksidata-> GPS_time_data));
-  // piksidata->baseline_NED_data = calloc(1, sizeof(piksidata-> baseline_NED_data));
-  // piksidata->LLH_data = calloc(1, sizeof(piksidata-> LLH_data));
-  // piksidata->NED_velocity_data = calloc(1, sizeof(piksidata-> NED_velocity_data));
-  // piksidata->IMU_data = calloc(1, sizeof(piksidata-> IMU_data));
-
-  
   fprintf(stdout, "piksi_data_setup complete. totalsize = %d bytes\n", (int)(sizeof (*piksidata) + sizeof(piksidata-> GPS_time_data) + sizeof(piksidata-> baseline_NED_data) + sizeof(piksidata-> LLH_data) + sizeof(piksidata-> NED_velocity_data) + sizeof(piksidata-> IMU_data)) );
   
   return 0; // need to add error code here
@@ -33,17 +24,12 @@ int piksi_data_close(piksi_data_t *piksidata)
   munmap(piksidata->baseline_NED_data, sizeof(piksidata->baseline_NED_data));
   munmap(piksidata->LLH_data, sizeof(piksidata->LLH_data));
   munmap(piksidata->NED_velocity_data, sizeof(piksidata->NED_velocity_data));
-  munmap(piksidata->IMU_data, sizeof(piksidata->NED_velocity_data));
+  munmap(piksidata->IMU_data, sizeof(piksidata->IMU_data));
+  munmap(piksidata->ECEF_data, sizeof(piksidata->ECEF_data));
+  munmap(piksidata->baseline_ECEF_data, sizeof(piksidata->baseline_ECEF_data));
 
   munmap(piksidata, sizeof(piksidata));
 
-  // free(piksidata->GPS_time_data);
-  // free(piksidata->baseline_NED_data);
-  // free(piksidata->LLH_data);
-  // free(piksidata->NED_velocity_data);
-  // free(piksidata->IMU_data);
-
-  // free(piksidata);
 
   return 0; // need to add error code here
 }
@@ -53,9 +39,8 @@ void heartbeat_callback(u16 sender_id, u8 len, u8 msg[], void *context)
 {
   (void)sender_id, (void)len, (void)msg, (void)context;
 
-  //piksi_data_t *piksi_data= (piksi_data_t*)context;
 
-  fprintf(stdout, "%s\n", __FUNCTION__);
+  if (blnDebugToScreen == 13) {fprintf(stdout, "%s\n", __FUNCTION__);}
 }
 
 void pos_llh_callback(u16 sender_id, u8 len, u8 msg[], void *context)
@@ -82,15 +67,17 @@ void pos_llh_callback(u16 sender_id, u8 len, u8 msg[], void *context)
   cJSON_AddNumberToObject(dta, "v_accuracy", pos_llh_struct -> v_accuracy);
   cJSON_AddNumberToObject(dta, "n_sats", pos_llh_struct -> n_sats);
   cJSON_AddNumberToObject(dta, "flags", pos_llh_struct -> flags );
-  fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));
-  slog(0, SLOG_LIVE, cJSON_PrintUnformatted(root));
+  if (blnDebugToScreen == 13) {fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));}
+  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
+
+  cJSON_Delete(root);
 
 
   // output items in structure
-  fprintf(stdout, "tow = %d ms; ", pos_llh_struct -> tow);
-  fprintf(stdout, "-> latitude/longitude/height = %lf/%lf/%lf ", pos_llh_struct -> lat,  pos_llh_struct -> lon,  pos_llh_struct -> height);
+  if (blnDebugToScreen == 13) {fprintf(stdout, "tow = %d ms; ", pos_llh_struct -> tow);}
+  if (blnDebugToScreen == 13) {fprintf(stdout, "-> latitude/longitude/height = %lf/%lf/%lf ", pos_llh_struct -> lat,  pos_llh_struct -> lon,  pos_llh_struct -> height);}
 
-  fprintf(stdout, "%s\n", __FUNCTION__);
+  //if (blnDebugToScreen == 13) {fprintf(stdout, "%s\n", __FUNCTION__);}
 }
 
 void baseline_ned_callback(u16 sender_id, u8 len, u8 msg[], void *context)
@@ -117,18 +104,21 @@ void baseline_ned_callback(u16 sender_id, u8 len, u8 msg[], void *context)
   cJSON_AddNumberToObject(dta, "v_accuracy", baseline_ned_struct -> v_accuracy);
   cJSON_AddNumberToObject(dta, "n_sats", baseline_ned_struct -> n_sats);
   cJSON_AddNumberToObject(dta, "flags", baseline_ned_struct -> flags );
-  fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));
-  slog(0, SLOG_LIVE, cJSON_PrintUnformatted(root));
+  if (blnDebugToScreen == 13) {fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));}
+  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
+  
+  cJSON_Delete(root);
   
   // output items in structure
-  fprintf(stdout, "tow = %d ms; ", baseline_ned_struct -> tow);
-  fprintf(stdout, "-> north/east/down = %d/%d/%d ", baseline_ned_struct -> n,  baseline_ned_struct -> e,  baseline_ned_struct -> d);
-  fprintf(stdout, "-> h_acc/v_acc/#sats = %d/%d/%d ", baseline_ned_struct -> h_accuracy,  baseline_ned_struct -> v_accuracy,  baseline_ned_struct -> n_sats);
-  if (baseline_ned_struct -> flags | 0x04){
-    fprintf(stdout, "-> src=fixed RTK ");
+  if (blnDebugToScreen == 13) {
+	  fprintf(stdout, "tow = %d ms; ", baseline_ned_struct -> tow);
+	fprintf(stdout, "-> north/east/down = %d/%d/%d ", baseline_ned_struct -> n,  baseline_ned_struct -> e,  baseline_ned_struct -> d);
+	fprintf(stdout, "-> h_acc/v_acc/#sats = %d/%d/%d ", baseline_ned_struct -> h_accuracy,  baseline_ned_struct -> v_accuracy,  baseline_ned_struct -> n_sats);
+	if (baseline_ned_struct -> flags | 0x04){
+		fprintf(stdout, "-> src=fixed RTK ");
+	}
   }
-
-  fprintf(stdout, "%s\n", __FUNCTION__);
+  if (blnDebugToScreen == 13) {fprintf(stdout, "%s\n", __FUNCTION__);}
 }
 
 void vel_ned_callback(u16 sender_id, u8 len, u8 msg[], void *context)
@@ -155,27 +145,30 @@ void vel_ned_callback(u16 sender_id, u8 len, u8 msg[], void *context)
   cJSON_AddNumberToObject(dta, "v_accuracy", vel_ned_struct -> v_accuracy);
   cJSON_AddNumberToObject(dta, "n_sats", vel_ned_struct -> n_sats);
   cJSON_AddNumberToObject(dta, "flags", vel_ned_struct -> flags );
-  fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));
-  slog(0, SLOG_LIVE, cJSON_PrintUnformatted(root));
+  if (blnDebugToScreen == 13) {fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));}
+  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
+
+  cJSON_Delete(root);
 
   // output items in structure
-  fprintf(stdout, "tow = %d ms; ", vel_ned_struct -> tow);
-  fprintf(stdout, "-> north_vel/east_vel/down_vel = %d/%d/%d ", vel_ned_struct -> n,  vel_ned_struct -> e,  vel_ned_struct -> d);
-  fprintf(stdout, "-> h_acc/v_acc/#sats = %d/%d/%d ", vel_ned_struct -> h_accuracy,  vel_ned_struct -> v_accuracy,  vel_ned_struct -> n_sats);
-  switch (vel_ned_struct -> flags)
-  {
-    case 0x00:
-      fprintf(stdout, "-> src=invalid ");
-      break;
-    case 0x01:
-      fprintf(stdout, "-> src=Measured Doppler derived ");
-      break;
-    case 0x02:
-      fprintf(stdout, "-> src=Computed Doppler derived ");
-      break;
-  }    
-  
-  fprintf(stdout, "%s\n", __FUNCTION__);
+  if (blnDebugToScreen == 13) {
+	  fprintf(stdout, "tow = %d ms; ", vel_ned_struct -> tow);
+	  fprintf(stdout, "-> north_vel/east_vel/down_vel = %d/%d/%d ", vel_ned_struct -> n,  vel_ned_struct -> e,  vel_ned_struct -> d);
+	  fprintf(stdout, "-> h_acc/v_acc/#sats = %d/%d/%d ", vel_ned_struct -> h_accuracy,  vel_ned_struct -> v_accuracy,  vel_ned_struct -> n_sats);
+	  switch (vel_ned_struct -> flags)
+	  {
+		case 0x00:
+		  fprintf(stdout, "-> src=invalid ");
+		  break;
+		case 0x01:
+		  fprintf(stdout, "-> src=Measured Doppler derived ");
+		  break;
+		case 0x02:
+		  fprintf(stdout, "-> src=Computed Doppler derived ");
+		  break;
+	  }    
+  }
+  if (blnDebugToScreen == 13) {fprintf(stdout, "%s\n", __FUNCTION__);}
 }
 
 // not currently any useful data stored in this packet.
@@ -188,7 +181,7 @@ void base_pos_llh_callback(u16 sender_id, u8 len, u8 msg[], void *context)
 
   base_pos_llh_struct = (msg_base_pos_llh_t *) msg; // cast msg pointer to appropriate type and save for later use
   
-  //memcpy( piksi_data-> ?????, base_pos_llh_struct, sizeof(*base_pos_llh_struct));
+  //memcpy( piksi_data-> base_pos_llh_struct, sizeof(*base_pos_llh_struct));
 
   // output items in structure
   cJSON *root;
@@ -199,13 +192,16 @@ void base_pos_llh_callback(u16 sender_id, u8 len, u8 msg[], void *context)
   cJSON_AddNumberToObject(dta, "lat", base_pos_llh_struct -> lat);
   cJSON_AddNumberToObject(dta, "lon", base_pos_llh_struct -> lon);
   cJSON_AddNumberToObject(dta, "height", base_pos_llh_struct -> height);
-  fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));
-  slog(0, SLOG_LIVE, cJSON_PrintUnformatted(root));
+  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
 
+  cJSON_Delete(root);
 
-  fprintf(stdout, "-> latitude/longitude/height = %lf/%lf/%lf ", base_pos_llh_struct -> lat,  base_pos_llh_struct -> lon,  base_pos_llh_struct -> height);
-
-  fprintf(stdout, "%s\n", __FUNCTION__);
+  if (blnDebugToScreen == 13) 
+   {
+	fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));
+	fprintf(stdout, "-> latitude/longitude/height = %lf/%lf/%lf ", base_pos_llh_struct -> lat,  base_pos_llh_struct -> lon,  base_pos_llh_struct -> height);
+	fprintf(stdout, "%s\n", __FUNCTION__);
+  }
 }
 
 void gps_time_callback(u16 sender_id, u8 len, u8 msg[], void *context)
@@ -219,30 +215,8 @@ void gps_time_callback(u16 sender_id, u8 len, u8 msg[], void *context)
   
   memcpy( piksi_data->GPS_time_data, gps_time_struct, sizeof(*gps_time_struct));
 
-  cJSON *root;
-  cJSON *dta;
-  root = cJSON_CreateObject();
-  cJSON_AddItemToObject(root, "name", cJSON_CreateString("Time Callback"));
-  cJSON_AddItemToObject(root, "data", dta = cJSON_CreateObject());
-  cJSON_AddNumberToObject(dta, "wn", gps_time_struct -> wn);
-  cJSON_AddNumberToObject(dta, "tow", gps_time_struct -> tow);
-  cJSON_AddNumberToObject(dta, "ns_residual", gps_time_struct -> ns_residual);
-  cJSON_AddNumberToObject(dta, "flags", gps_time_struct -> flags);
-  
-  fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));
-  slog(0, SLOG_LIVE, cJSON_PrintUnformatted(root));
-  // output items in structure
-  fprintf(stdout, "-> # weeks = %d, tow = %dms, residual nanosecond = %dns, flags = %d: \n", gps_time_struct -> wn, 
-          gps_time_struct -> tow, gps_time_struct -> ns_residual, gps_time_struct -> flags);
-  slog(0, SLOG_INFO, "-> # weeks = %d, tow = %dms, residual nanosecond = %dns, flags = %d: %s", gps_time_struct -> wn, 
-          gps_time_struct -> tow, gps_time_struct -> ns_residual, gps_time_struct -> flags, __FUNCTION__);
-  // fprintf(stdout, "-> # weeks = %d, ", gps_time_struct -> wn);
-  // fprintf(stdout, "tow = %dms, ", gps_time_struct -> tow);
-  // fprintf(stdout, "residual nanosecond = %dns, ", gps_time_struct -> ns_residual);
-  // fprintf(stdout, "flags = %d: ", gps_time_struct -> flags);
-  
-  //fprintf(stdout, "%s\n", __FUNCTION__); // output function name
-  
+  //fprintf(stdout, "GPS time callback tow:\"%d\"\n", piksi_data->GPS_time_data->tow);
+
   
 }
 
@@ -273,15 +247,18 @@ void utc_time_callback(u16 sender_id, u8 len, u8 msg[], void *context)
   cJSON_AddNumberToObject(dta, "minutes", utc_time_struct -> minutes);
   cJSON_AddNumberToObject(dta, "seconds", utc_time_struct -> seconds);
   cJSON_AddNumberToObject(dta, "ns", utc_time_struct -> ns);
-  fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));
-  slog(0, SLOG_LIVE, cJSON_PrintUnformatted(root));
+  if (blnDebugToScreen == 13) {fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));}
+  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
 
-  fprintf(stdout, "-> flags = %d, ", utc_time_struct -> flags);
-  fprintf(stdout, "tow = %d, ", utc_time_struct -> tow);
-  fprintf(stdout, "date = %d/%d/%d %d:%d:%d ", utc_time_struct -> year, utc_time_struct -> month, utc_time_struct -> day, utc_time_struct -> hours, utc_time_struct -> minutes, utc_time_struct -> seconds );
-  fprintf(stdout, "nanoseconds = %10dns : ", utc_time_struct -> ns);
+  cJSON_Delete(root);
   
-  fprintf(stdout, "%s\n", __FUNCTION__); // output function name
+  if (blnDebugToScreen == 13) {
+	  fprintf(stdout, "-> flags = %d, ", utc_time_struct -> flags);
+	  fprintf(stdout, "tow = %d, ", utc_time_struct -> tow);
+	  fprintf(stdout, "date = %d/%d/%d %d:%d:%d ", utc_time_struct -> year, utc_time_struct -> month, utc_time_struct -> day, utc_time_struct -> hours, utc_time_struct -> minutes, utc_time_struct -> seconds );
+	  fprintf(stdout, "nanoseconds = %10dns : ", utc_time_struct -> ns);
+  }
+  if (blnDebugToScreen == 13) {fprintf(stdout, "%s\n", __FUNCTION__);} // output function name
 }
 
 void imu_raw_callback(u16 sender_id, u8 len, u8 msg[], void *context)
@@ -302,7 +279,7 @@ void imu_raw_callback(u16 sender_id, u8 len, u8 msg[], void *context)
   cJSON *root;
   cJSON *dta;
   root = cJSON_CreateObject();
-  cJSON_AddItemToObject(root, "name", cJSON_CreateString("utc_time"));
+  cJSON_AddItemToObject(root, "name", cJSON_CreateString("IMU_data"));
   cJSON_AddItemToObject(root, "data", dta = cJSON_CreateObject());
   cJSON_AddNumberToObject(dta, "tow", imu_raw_struct -> tow);
   cJSON_AddNumberToObject(dta, "tow_f", imu_raw_struct -> tow_f);
@@ -312,17 +289,107 @@ void imu_raw_callback(u16 sender_id, u8 len, u8 msg[], void *context)
   cJSON_AddNumberToObject(dta, "gyr_x", imu_raw_struct -> gyr_x);
   cJSON_AddNumberToObject(dta, "gyr_y", imu_raw_struct -> gyr_y);
   cJSON_AddNumberToObject(dta, "gyr_z", imu_raw_struct -> gyr_z);
-  fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));
-  slog(0, SLOG_LIVE, cJSON_PrintUnformatted(root));
+  if (blnDebugToScreen == 13) {fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));}
+  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
+
+  cJSON_Delete(root);
 
   
   // output items in structure
   //fprintf(stdout, "tow = %d ms, %d; ", imu_raw_struct -> tow, imu_raw_struct -> tow_f);
-  fprintf(stdout, "acc x/y/z %d/%d/%d gyr x/y/z %d/%d/%d ", imu_raw_struct -> acc_x, imu_raw_struct -> acc_y, imu_raw_struct -> acc_z, imu_raw_struct -> gyr_x, imu_raw_struct -> gyr_y, imu_raw_struct -> gyr_z );
+  if (blnDebugToScreen == 13) {fprintf(stdout, "acc x/y/z %d/%d/%d gyr x/y/z %d/%d/%d ", imu_raw_struct -> acc_x, imu_raw_struct -> acc_y, imu_raw_struct -> acc_z, imu_raw_struct -> gyr_x, imu_raw_struct -> gyr_y, imu_raw_struct -> gyr_z );}
   //fprintf(stdout, "nanoseconds = %10dns : ", imu_raw_struct -> ns);
-  fprintf(stdout, "%s\n", __FUNCTION__); // output function name
+  if (blnDebugToScreen == 13) {fprintf(stdout, "%s\n", __FUNCTION__);} // output function name
 }
 
+
+void baseline_ecef_callback(u16 sender_id, u8 len, u8 msg[], void *context)
+{
+  (void)sender_id, (void)len, (void)msg, (void)context;
+  piksi_data_t *piksi_data= (piksi_data_t*)context;
+  
+  msg_baseline_ecef_t *baseline_ECEF_struct;
+  baseline_ECEF_struct = (msg_baseline_ecef_t *) msg;
+  memcpy( piksi_data-> baseline_ECEF_data, baseline_ECEF_struct, sizeof(*baseline_ECEF_struct));
+  
+  //fprintf(stdout, "baseline_ecef_callback tow:\"%d\"\n", piksi_data->baseline_ECEF_data->tow);
+
+  
+  
+  cJSON *root;
+  cJSON *dta;
+  root = cJSON_CreateObject();
+  cJSON_AddItemToObject(root, "name", cJSON_CreateString("baseline_ECEF"));
+  cJSON_AddItemToObject(root, "data", dta = cJSON_CreateObject());
+  cJSON_AddNumberToObject(dta, "tow", baseline_ECEF_struct -> tow);
+  cJSON_AddNumberToObject(dta, "x", baseline_ECEF_struct -> x);
+  cJSON_AddNumberToObject(dta, "y", baseline_ECEF_struct -> y);
+  cJSON_AddNumberToObject(dta, "z", baseline_ECEF_struct -> z);
+  cJSON_AddNumberToObject(dta, "accuracy", baseline_ECEF_struct -> accuracy);
+  cJSON_AddNumberToObject(dta, "n_sats", baseline_ECEF_struct -> n_sats);
+  cJSON_AddNumberToObject(dta, "flags", baseline_ECEF_struct -> flags );
+  if (blnDebugToScreen == 13) {fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));}
+  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
+
+  cJSON_Delete(root);
+  
+  // output items in structure
+  if (blnDebugToScreen == 13) {
+	  fprintf(stdout, "tow = %d ms; ", baseline_ECEF_struct -> tow);
+	fprintf(stdout, "-> x/y/z = %d/%d/%d ", baseline_ECEF_struct -> x,  baseline_ECEF_struct -> y,  baseline_ECEF_struct -> z);
+	fprintf(stdout, "-> acc/#sats = %d/%d ", baseline_ECEF_struct -> accuracy, baseline_ECEF_struct -> n_sats);
+	if (baseline_ECEF_struct -> flags | 0x04){
+		fprintf(stdout, "-> src=fixed RTK ");
+	}
+  }
+  if (blnDebugToScreen == 13) {fprintf(stdout, "%s\n", __FUNCTION__);}
+
+  
+ 
+}
+
+
+void pos_ecef_callback(u16 sender_id, u8 len, u8 msg[], void *context)
+{
+  
+  (void)sender_id, (void)len, (void)msg, (void)context;
+  piksi_data_t *piksi_data= (piksi_data_t*)context;
+  
+  msg_pos_ecef_t *ECEF_struct;
+
+  ECEF_struct = (msg_pos_ecef_t *) msg;
+  
+  memcpy( piksi_data-> ECEF_data, ECEF_struct, sizeof(*ECEF_struct));
+ 
+  //fprintf(stdout, "pos_ecef_callback tow:\"%d\"\n", piksi_data->ECEF_data->tow);
+
+  cJSON *root;
+  cJSON *dta;
+  root = cJSON_CreateObject();
+  cJSON_AddItemToObject(root, "name", cJSON_CreateString("pos_ecef"));
+  cJSON_AddItemToObject(root, "data", dta = cJSON_CreateObject());
+  cJSON_AddNumberToObject(dta, "tow", ECEF_struct -> tow);
+  cJSON_AddNumberToObject(dta, "x", ECEF_struct -> x);
+  cJSON_AddNumberToObject(dta, "y", ECEF_struct -> y);
+  cJSON_AddNumberToObject(dta, "z", ECEF_struct -> z);
+  cJSON_AddNumberToObject(dta, "accuracy", ECEF_struct -> accuracy);
+  cJSON_AddNumberToObject(dta, "n_sats", ECEF_struct -> n_sats);
+  cJSON_AddNumberToObject(dta, "flags", ECEF_struct -> flags );
+  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
+
+  cJSON_Delete(root);
+
+
+  // output items in structure
+  if (blnDebugToScreen == 13) {fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));}
+  if (blnDebugToScreen == 13) {fprintf(stdout, "tow = %d ms; ", ECEF_struct -> tow);}
+  if (blnDebugToScreen == 13) {fprintf(stdout, "-> x/y/z = %lf/%lf/%lf ", ECEF_struct -> x,  ECEF_struct -> y,  ECEF_struct -> z);}
+
+  //if (blnDebugToScreen == 13) {fprintf(stdout, "%s\n", __FUNCTION__);}
+  
+  
+
+}
 
 
 

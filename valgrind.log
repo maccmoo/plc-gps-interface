@@ -1,0 +1,76 @@
+2019.03.02-23:57:32.19 - [[32mINFO[0m] Loading logger config from: slog.cfg
+2019.03.02-23:57:33.42 - [[32mINFO[0m] Opening logging file
+parent processID=6188
+2019.03.02-23:57:33.43 - [[32mINFO[0m] parent processID=6188
+
+piksi_data_setup complete. totalsize = 88 bytes
+IP address set to "192.168.1.35"
+2019.03.02-23:57:33.48 - [[32mINFO[0m] IP address set to "192.168.1.35"
+
+IP port set to "55555"
+2019.03.02-23:57:33.50 - [[32mINFO[0m] IP port set to "55555"
+
+UTC Time disabled
+2019.03.02-23:57:33.52 - [[32mINFO[0m] UTC Time disabled
+
+LLH position data collection disabled
+2019.03.02-23:57:33.52 - [[32mINFO[0m] LLH position data collection disabled
+
+base position data collection disabled
+2019.03.02-23:57:33.53 - [[32mINFO[0m] base position data collection disabled
+
+IMU data collection disabled
+2019.03.02-23:57:33.54 - [[32mINFO[0m] IMU data collection disabled
+
+Baseline NED Rover coordinate collection disabled
+2019.03.02-23:57:33.54 - [[32mINFO[0m] Baseline NED Rover coordinate collection disabled
+
+NED velocity collection disabled
+2019.03.02-23:57:33.55 - [[32mINFO[0m] NED velocity collection disabled
+
+heartbeat collection disabled
+2019.03.02-23:57:33.55 - [[32mINFO[0m] heartbeat collection disabled
+
+child PID 6191
+2019.03.02-23:57:33.72 - [[32mINFO[0m] child PID 6191
+
+creating modbus mapping
+modbus mapping complete
+Waiting for TCP connection on Port 502 
+2019.03.02-23:57:33.74 - [[32mINFO[0m] Waiting for TCP connection on Port 502 
+
+binding to all tcp ports
+all tcp ports bound
+2019.03.02-23:57:32.19 - [[32mINFO[0m] Loading logger config from: slog.cfg
+2019.03.02-23:57:33.42 - [[32mINFO[0m] Opening logging file
+parent processID=6188
+2019.03.02-23:57:33.43 - [[32mINFO[0m] parent processID=6188
+
+piksi_data_setup complete. totalsize = 88 bytes
+IP address set to "192.168.1.35"
+2019.03.02-23:57:33.48 - [[32mINFO[0m] IP address set to "192.168.1.35"
+
+IP port set to "55555"
+2019.03.02-23:57:33.50 - [[32mINFO[0m] IP port set to "55555"
+
+UTC Time disabled
+2019.03.02-23:57:33.52 - [[32mINFO[0m] UTC Time disabled
+
+LLH position data collection disabled
+2019.03.02-23:57:33.52 - [[32mINFO[0m] LLH position data collection disabled
+
+base position data collection disabled
+2019.03.02-23:57:33.53 - [[32mINFO[0m] base position data collection disabled
+
+IMU data collection disabled
+2019.03.02-23:57:33.54 - [[32mINFO[0m] IMU data collection disabled
+
+Baseline NED Rover coordinate collection disabled
+2019.03.02-23:57:33.54 - [[32mINFO[0m] Baseline NED Rover coordinate collection disabled
+
+NED velocity collection disabled
+2019.03.02-23:57:33.55 - [[32mINFO[0m] NED velocity collection disabled
+
+heartbeat collection disabled
+2019.03.02-23:57:33.55 - [[32mINFO[0m] heartbeat collection disabled
+
