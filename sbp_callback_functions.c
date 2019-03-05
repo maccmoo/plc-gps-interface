@@ -37,9 +37,12 @@ int piksi_data_close(piksi_data_t *piksidata)
 // currently no data in this fucntion. just used for diagnostics atm.
 void heartbeat_callback(u16 sender_id, u8 len, u8 msg[], void *context)
 {
+  // time_t tmLastHeartbeat;
   (void)sender_id, (void)len, (void)msg, (void)context;
 
-
+  tmLastHeartbeat = time(NULL);
+  tmLastSuccessfulRead = time(NULL);
+  
   if (blnDebugToScreen == 13) {fprintf(stdout, "%s\n", __FUNCTION__);}
 }
 
@@ -54,28 +57,37 @@ void pos_llh_callback(u16 sender_id, u8 len, u8 msg[], void *context)
   
   memcpy( piksi_data-> LLH_data, pos_llh_struct, sizeof(*pos_llh_struct));
 
-  cJSON *root;
-  cJSON *dta;
-  root = cJSON_CreateObject();
-  cJSON_AddItemToObject(root, "name", cJSON_CreateString("pos_llh"));
-  cJSON_AddItemToObject(root, "data", dta = cJSON_CreateObject());
-  cJSON_AddNumberToObject(dta, "tow", pos_llh_struct -> tow);
-  cJSON_AddNumberToObject(dta, "lat", pos_llh_struct -> lat);
-  cJSON_AddNumberToObject(dta, "lon", pos_llh_struct -> lon);
-  cJSON_AddNumberToObject(dta, "height", pos_llh_struct -> height);
-  cJSON_AddNumberToObject(dta, "h_accuracy", pos_llh_struct -> h_accuracy);
-  cJSON_AddNumberToObject(dta, "v_accuracy", pos_llh_struct -> v_accuracy);
-  cJSON_AddNumberToObject(dta, "n_sats", pos_llh_struct -> n_sats);
-  cJSON_AddNumberToObject(dta, "flags", pos_llh_struct -> flags );
-  if (blnDebugToScreen == 13) {fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));}
-  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
+  // cJSON *root;
+  // cJSON *dta;
+  // root = cJSON_CreateObject();
+  // cJSON_AddItemToObject(root, "name", cJSON_CreateString("pos_llh"));
+  // cJSON_AddItemToObject(root, "data", dta = cJSON_CreateObject());
+  // cJSON_AddNumberToObject(dta, "tow", pos_llh_struct -> tow);
+  // cJSON_AddNumberToObject(dta, "lat", pos_llh_struct -> lat);
+  // cJSON_AddNumberToObject(dta, "lon", pos_llh_struct -> lon);
+  // cJSON_AddNumberToObject(dta, "height", pos_llh_struct -> height);
+  // cJSON_AddNumberToObject(dta, "h_accuracy", pos_llh_struct -> h_accuracy);
+  // cJSON_AddNumberToObject(dta, "v_accuracy", pos_llh_struct -> v_accuracy);
+  // cJSON_AddNumberToObject(dta, "n_sats", pos_llh_struct -> n_sats);
+  // cJSON_AddNumberToObject(dta, "flags", pos_llh_struct -> flags );
+  if (blnDebugToScreen == 13) {
+    // fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));
+  }
+//  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
 
-  cJSON_Delete(root);
+  // cJSON_Delete(root);
 
+  tmLastSuccessfulRead = time(NULL);
 
+  
+  
   // output items in structure
-  if (blnDebugToScreen == 13) {fprintf(stdout, "tow = %d ms; ", pos_llh_struct -> tow);}
-  if (blnDebugToScreen == 13) {fprintf(stdout, "-> latitude/longitude/height = %lf/%lf/%lf ", pos_llh_struct -> lat,  pos_llh_struct -> lon,  pos_llh_struct -> height);}
+  if (blnDebugToScreen == 13) {
+    fprintf(stdout, "tow = %d ms; ", pos_llh_struct -> tow);
+  }
+  if (blnDebugToScreen == 13) {
+    fprintf(stdout, "-> latitude/longitude/height = %lf/%lf/%lf ", pos_llh_struct -> lat,  pos_llh_struct -> lon,  pos_llh_struct -> height);
+  }
 
   //if (blnDebugToScreen == 13) {fprintf(stdout, "%s\n", __FUNCTION__);}
 }
@@ -91,31 +103,35 @@ void baseline_ned_callback(u16 sender_id, u8 len, u8 msg[], void *context)
   
   memcpy( piksi_data-> baseline_NED_data, baseline_ned_struct, sizeof(*baseline_ned_struct));
 
-  cJSON *root;
-  cJSON *dta;
-  root = cJSON_CreateObject();
-  cJSON_AddItemToObject(root, "name", cJSON_CreateString("baseline_ned"));
-  cJSON_AddItemToObject(root, "data", dta = cJSON_CreateObject());
-  cJSON_AddNumberToObject(dta, "tow", baseline_ned_struct -> tow);
-  cJSON_AddNumberToObject(dta, "n", baseline_ned_struct -> n);
-  cJSON_AddNumberToObject(dta, "e", baseline_ned_struct -> e);
-  cJSON_AddNumberToObject(dta, "d", baseline_ned_struct -> d);
-  cJSON_AddNumberToObject(dta, "h_accuracy", baseline_ned_struct -> h_accuracy);
-  cJSON_AddNumberToObject(dta, "v_accuracy", baseline_ned_struct -> v_accuracy);
-  cJSON_AddNumberToObject(dta, "n_sats", baseline_ned_struct -> n_sats);
-  cJSON_AddNumberToObject(dta, "flags", baseline_ned_struct -> flags );
-  if (blnDebugToScreen == 13) {fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));}
-  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
+  // cJSON *root;
+  // cJSON *dta;
+  // root = cJSON_CreateObject();
+  // cJSON_AddItemToObject(root, "name", cJSON_CreateString("baseline_ned"));
+  // cJSON_AddItemToObject(root, "data", dta = cJSON_CreateObject());
+  // cJSON_AddNumberToObject(dta, "tow", baseline_ned_struct -> tow);
+  // cJSON_AddNumberToObject(dta, "n", baseline_ned_struct -> n);
+  // cJSON_AddNumberToObject(dta, "e", baseline_ned_struct -> e);
+  // cJSON_AddNumberToObject(dta, "d", baseline_ned_struct -> d);
+  // cJSON_AddNumberToObject(dta, "h_accuracy", baseline_ned_struct -> h_accuracy);
+  // cJSON_AddNumberToObject(dta, "v_accuracy", baseline_ned_struct -> v_accuracy);
+  // cJSON_AddNumberToObject(dta, "n_sats", baseline_ned_struct -> n_sats);
+  // cJSON_AddNumberToObject(dta, "flags", baseline_ned_struct -> flags );
+  if (blnDebugToScreen == 13) {
+    // fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));
+  }
+//  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
   
-  cJSON_Delete(root);
+  // cJSON_Delete(root);
+
+  tmLastSuccessfulRead = time(NULL);
   
   // output items in structure
   if (blnDebugToScreen == 13) {
-	  fprintf(stdout, "tow = %d ms; ", baseline_ned_struct -> tow);
+    fprintf(stdout, "tow = %d ms; ", baseline_ned_struct -> tow);
 	fprintf(stdout, "-> north/east/down = %d/%d/%d ", baseline_ned_struct -> n,  baseline_ned_struct -> e,  baseline_ned_struct -> d);
 	fprintf(stdout, "-> h_acc/v_acc/#sats = %d/%d/%d ", baseline_ned_struct -> h_accuracy,  baseline_ned_struct -> v_accuracy,  baseline_ned_struct -> n_sats);
 	if (baseline_ned_struct -> flags | 0x04){
-		fprintf(stdout, "-> src=fixed RTK ");
+      fprintf(stdout, "-> src=fixed RTK ");
 	}
   }
   if (blnDebugToScreen == 13) {fprintf(stdout, "%s\n", __FUNCTION__);}
@@ -132,23 +148,28 @@ void vel_ned_callback(u16 sender_id, u8 len, u8 msg[], void *context)
   
   memcpy( piksi_data-> NED_velocity_data, vel_ned_struct, sizeof(*vel_ned_struct));
 
-    cJSON *root;
-  cJSON *dta;
-  root = cJSON_CreateObject();
-  cJSON_AddItemToObject(root, "name", cJSON_CreateString("vel_ned"));
-  cJSON_AddItemToObject(root, "data", dta = cJSON_CreateObject());
-  cJSON_AddNumberToObject(dta, "tow", vel_ned_struct -> tow);
-  cJSON_AddNumberToObject(dta, "n", vel_ned_struct -> n);
-  cJSON_AddNumberToObject(dta, "e", vel_ned_struct -> e);
-  cJSON_AddNumberToObject(dta, "d", vel_ned_struct -> d);
-  cJSON_AddNumberToObject(dta, "h_accuracy", vel_ned_struct -> h_accuracy);
-  cJSON_AddNumberToObject(dta, "v_accuracy", vel_ned_struct -> v_accuracy);
-  cJSON_AddNumberToObject(dta, "n_sats", vel_ned_struct -> n_sats);
-  cJSON_AddNumberToObject(dta, "flags", vel_ned_struct -> flags );
-  if (blnDebugToScreen == 13) {fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));}
-  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
+  // cJSON *root;
+  // cJSON *dta;
+  // root = cJSON_CreateObject();
+  // cJSON_AddItemToObject(root, "name", cJSON_CreateString("vel_ned"));
+  // cJSON_AddItemToObject(root, "data", dta = cJSON_CreateObject());
+  // cJSON_AddNumberToObject(dta, "tow", vel_ned_struct -> tow);
+  // cJSON_AddNumberToObject(dta, "n", vel_ned_struct -> n);
+  // cJSON_AddNumberToObject(dta, "e", vel_ned_struct -> e);
+  // cJSON_AddNumberToObject(dta, "d", vel_ned_struct -> d);
+  // cJSON_AddNumberToObject(dta, "h_accuracy", vel_ned_struct -> h_accuracy);
+  // cJSON_AddNumberToObject(dta, "v_accuracy", vel_ned_struct -> v_accuracy);
+  // cJSON_AddNumberToObject(dta, "n_sats", vel_ned_struct -> n_sats);
+  // cJSON_AddNumberToObject(dta, "flags", vel_ned_struct -> flags );
+  if (blnDebugToScreen == 13) {
+    // fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));
+  }
+//  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
 
-  cJSON_Delete(root);
+  // cJSON_Delete(root);
+
+  tmLastSuccessfulRead = time(NULL);
+
 
   // output items in structure
   if (blnDebugToScreen == 13) {
@@ -184,21 +205,23 @@ void base_pos_llh_callback(u16 sender_id, u8 len, u8 msg[], void *context)
   //memcpy( piksi_data-> base_pos_llh_struct, sizeof(*base_pos_llh_struct));
 
   // output items in structure
-  cJSON *root;
-  cJSON *dta;
-  root = cJSON_CreateObject();
-  cJSON_AddItemToObject(root, "name", cJSON_CreateString("base_pos_llh"));
-  cJSON_AddItemToObject(root, "data", dta = cJSON_CreateObject());
-  cJSON_AddNumberToObject(dta, "lat", base_pos_llh_struct -> lat);
-  cJSON_AddNumberToObject(dta, "lon", base_pos_llh_struct -> lon);
-  cJSON_AddNumberToObject(dta, "height", base_pos_llh_struct -> height);
-  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
+  // cJSON *root;
+  // cJSON *dta;
+  // root = cJSON_CreateObject();
+  // cJSON_AddItemToObject(root, "name", cJSON_CreateString("base_pos_llh"));
+  // cJSON_AddItemToObject(root, "data", dta = cJSON_CreateObject());
+  // cJSON_AddNumberToObject(dta, "lat", base_pos_llh_struct -> lat);
+  // cJSON_AddNumberToObject(dta, "lon", base_pos_llh_struct -> lon);
+  // cJSON_AddNumberToObject(dta, "height", base_pos_llh_struct -> height);
+//  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
 
-  cJSON_Delete(root);
+  // cJSON_Delete(root);
 
+  tmLastSuccessfulRead = time(NULL);
+  
   if (blnDebugToScreen == 13) 
    {
-	fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));
+	// fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));
 	fprintf(stdout, "-> latitude/longitude/height = %lf/%lf/%lf ", base_pos_llh_struct -> lat,  base_pos_llh_struct -> lon,  base_pos_llh_struct -> height);
 	fprintf(stdout, "%s\n", __FUNCTION__);
   }
@@ -214,6 +237,8 @@ void gps_time_callback(u16 sender_id, u8 len, u8 msg[], void *context)
   gps_time_struct = (msg_gps_time_t *) msg; // cast msg pointer to appropriate type and save for later use
   
   memcpy( piksi_data->GPS_time_data, gps_time_struct, sizeof(*gps_time_struct));
+
+  tmLastSuccessfulRead = time(NULL);
 
   //fprintf(stdout, "GPS time callback tow:\"%d\"\n", piksi_data->GPS_time_data->tow);
 
@@ -233,24 +258,28 @@ void utc_time_callback(u16 sender_id, u8 len, u8 msg[], void *context)
   //memcpy( piksi_data-> ?????, utc_time_struct, sizeof(*utc_time_struct));
 
   // output items in structure
-  cJSON *root;
-  cJSON *dta;
-  root = cJSON_CreateObject();
-  cJSON_AddItemToObject(root, "name", cJSON_CreateString("utc_time"));
-  cJSON_AddItemToObject(root, "data", dta = cJSON_CreateObject());
-  cJSON_AddNumberToObject(dta, "flags", utc_time_struct -> flags);
-  cJSON_AddNumberToObject(dta, "tow", utc_time_struct -> tow);
-  cJSON_AddNumberToObject(dta, "year", utc_time_struct -> year);
-  cJSON_AddNumberToObject(dta, "month", utc_time_struct -> month);
-  cJSON_AddNumberToObject(dta, "day", utc_time_struct -> day);
-  cJSON_AddNumberToObject(dta, "hours", utc_time_struct -> hours);
-  cJSON_AddNumberToObject(dta, "minutes", utc_time_struct -> minutes);
-  cJSON_AddNumberToObject(dta, "seconds", utc_time_struct -> seconds);
-  cJSON_AddNumberToObject(dta, "ns", utc_time_struct -> ns);
-  if (blnDebugToScreen == 13) {fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));}
-  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
+  // cJSON *root;
+  // cJSON *dta;
+  // root = cJSON_CreateObject();
+  // cJSON_AddItemToObject(root, "name", cJSON_CreateString("utc_time"));
+  // cJSON_AddItemToObject(root, "data", dta = cJSON_CreateObject());
+  // cJSON_AddNumberToObject(dta, "flags", utc_time_struct -> flags);
+  // cJSON_AddNumberToObject(dta, "tow", utc_time_struct -> tow);
+  // cJSON_AddNumberToObject(dta, "year", utc_time_struct -> year);
+  // cJSON_AddNumberToObject(dta, "month", utc_time_struct -> month);
+  // cJSON_AddNumberToObject(dta, "day", utc_time_struct -> day);
+  // cJSON_AddNumberToObject(dta, "hours", utc_time_struct -> hours);
+  // cJSON_AddNumberToObject(dta, "minutes", utc_time_struct -> minutes);
+  // cJSON_AddNumberToObject(dta, "seconds", utc_time_struct -> seconds);
+  // cJSON_AddNumberToObject(dta, "ns", utc_time_struct -> ns);
+  if (blnDebugToScreen == 13) {
+    // fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));
+}
+//  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
 
-  cJSON_Delete(root);
+  // cJSON_Delete(root);
+  
+  tmLastSuccessfulRead = time(NULL);
   
   if (blnDebugToScreen == 13) {
 	  fprintf(stdout, "-> flags = %d, ", utc_time_struct -> flags);
@@ -276,24 +305,27 @@ void imu_raw_callback(u16 sender_id, u8 len, u8 msg[], void *context)
   memcpy( piksi_data-> IMU_data, imu_raw_struct, sizeof(*imu_raw_struct));
 
 
-  cJSON *root;
-  cJSON *dta;
-  root = cJSON_CreateObject();
-  cJSON_AddItemToObject(root, "name", cJSON_CreateString("IMU_data"));
-  cJSON_AddItemToObject(root, "data", dta = cJSON_CreateObject());
-  cJSON_AddNumberToObject(dta, "tow", imu_raw_struct -> tow);
-  cJSON_AddNumberToObject(dta, "tow_f", imu_raw_struct -> tow_f);
-  cJSON_AddNumberToObject(dta, "acc_x", imu_raw_struct -> acc_x);
-  cJSON_AddNumberToObject(dta, "acc_y", imu_raw_struct -> acc_y);
-  cJSON_AddNumberToObject(dta, "acc_z", imu_raw_struct -> acc_z);
-  cJSON_AddNumberToObject(dta, "gyr_x", imu_raw_struct -> gyr_x);
-  cJSON_AddNumberToObject(dta, "gyr_y", imu_raw_struct -> gyr_y);
-  cJSON_AddNumberToObject(dta, "gyr_z", imu_raw_struct -> gyr_z);
-  if (blnDebugToScreen == 13) {fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));}
-  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
+  // cJSON *root;
+  // cJSON *dta;
+  // root = cJSON_CreateObject();
+  // cJSON_AddItemToObject(root, "name", cJSON_CreateString("IMU_data"));
+  // cJSON_AddItemToObject(root, "data", dta = cJSON_CreateObject());
+  // cJSON_AddNumberToObject(dta, "tow", imu_raw_struct -> tow);
+  // cJSON_AddNumberToObject(dta, "tow_f", imu_raw_struct -> tow_f);
+  // cJSON_AddNumberToObject(dta, "acc_x", imu_raw_struct -> acc_x);
+  // cJSON_AddNumberToObject(dta, "acc_y", imu_raw_struct -> acc_y);
+  // cJSON_AddNumberToObject(dta, "acc_z", imu_raw_struct -> acc_z);
+  // cJSON_AddNumberToObject(dta, "gyr_x", imu_raw_struct -> gyr_x);
+  // cJSON_AddNumberToObject(dta, "gyr_y", imu_raw_struct -> gyr_y);
+  // cJSON_AddNumberToObject(dta, "gyr_z", imu_raw_struct -> gyr_z);
+  if (blnDebugToScreen == 13) {
+    //fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));
+  }
+//  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
 
-  cJSON_Delete(root);
+  // cJSON_Delete(root);
 
+  tmLastSuccessfulRead = time(NULL);
   
   // output items in structure
   //fprintf(stdout, "tow = %d ms, %d; ", imu_raw_struct -> tow, imu_raw_struct -> tow_f);
@@ -314,24 +346,26 @@ void baseline_ecef_callback(u16 sender_id, u8 len, u8 msg[], void *context)
   
   //fprintf(stdout, "baseline_ecef_callback tow:\"%d\"\n", piksi_data->baseline_ECEF_data->tow);
 
-  
-  
-  cJSON *root;
-  cJSON *dta;
-  root = cJSON_CreateObject();
-  cJSON_AddItemToObject(root, "name", cJSON_CreateString("baseline_ECEF"));
-  cJSON_AddItemToObject(root, "data", dta = cJSON_CreateObject());
-  cJSON_AddNumberToObject(dta, "tow", baseline_ECEF_struct -> tow);
-  cJSON_AddNumberToObject(dta, "x", baseline_ECEF_struct -> x);
-  cJSON_AddNumberToObject(dta, "y", baseline_ECEF_struct -> y);
-  cJSON_AddNumberToObject(dta, "z", baseline_ECEF_struct -> z);
-  cJSON_AddNumberToObject(dta, "accuracy", baseline_ECEF_struct -> accuracy);
-  cJSON_AddNumberToObject(dta, "n_sats", baseline_ECEF_struct -> n_sats);
-  cJSON_AddNumberToObject(dta, "flags", baseline_ECEF_struct -> flags );
-  if (blnDebugToScreen == 13) {fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));}
-  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
+  // cJSON *root;
+  // cJSON *dta;
+  // root = cJSON_CreateObject();
+  // cJSON_AddItemToObject(root, "name", cJSON_CreateString("baseline_ECEF"));
+  // cJSON_AddItemToObject(root, "data", dta = cJSON_CreateObject());
+  // cJSON_AddNumberToObject(dta, "tow", baseline_ECEF_struct -> tow);
+  // cJSON_AddNumberToObject(dta, "x", baseline_ECEF_struct -> x);
+  // cJSON_AddNumberToObject(dta, "y", baseline_ECEF_struct -> y);
+  // cJSON_AddNumberToObject(dta, "z", baseline_ECEF_struct -> z);
+  // cJSON_AddNumberToObject(dta, "accuracy", baseline_ECEF_struct -> accuracy);
+  // cJSON_AddNumberToObject(dta, "n_sats", baseline_ECEF_struct -> n_sats);
+  // cJSON_AddNumberToObject(dta, "flags", baseline_ECEF_struct -> flags );
+  if (blnDebugToScreen == 13) {
+    // fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));
+  }
+//  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
 
-  cJSON_Delete(root);
+  // cJSON_Delete(root);
+  
+  tmLastSuccessfulRead = time(NULL);
   
   // output items in structure
   if (blnDebugToScreen == 13) {
@@ -363,27 +397,34 @@ void pos_ecef_callback(u16 sender_id, u8 len, u8 msg[], void *context)
  
   //fprintf(stdout, "pos_ecef_callback tow:\"%d\"\n", piksi_data->ECEF_data->tow);
 
-  cJSON *root;
-  cJSON *dta;
-  root = cJSON_CreateObject();
-  cJSON_AddItemToObject(root, "name", cJSON_CreateString("pos_ecef"));
-  cJSON_AddItemToObject(root, "data", dta = cJSON_CreateObject());
-  cJSON_AddNumberToObject(dta, "tow", ECEF_struct -> tow);
-  cJSON_AddNumberToObject(dta, "x", ECEF_struct -> x);
-  cJSON_AddNumberToObject(dta, "y", ECEF_struct -> y);
-  cJSON_AddNumberToObject(dta, "z", ECEF_struct -> z);
-  cJSON_AddNumberToObject(dta, "accuracy", ECEF_struct -> accuracy);
-  cJSON_AddNumberToObject(dta, "n_sats", ECEF_struct -> n_sats);
-  cJSON_AddNumberToObject(dta, "flags", ECEF_struct -> flags );
-  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
+  // cJSON *root;
+  // cJSON *dta;
+  // root = cJSON_CreateObject();
+  // cJSON_AddItemToObject(root, "name", cJSON_CreateString("pos_ecef"));
+  // cJSON_AddItemToObject(root, "data", dta = cJSON_CreateObject());
+  // cJSON_AddNumberToObject(dta, "tow", ECEF_struct -> tow);
+  // cJSON_AddNumberToObject(dta, "x", ECEF_struct -> x);
+  // cJSON_AddNumberToObject(dta, "y", ECEF_struct -> y);
+  // cJSON_AddNumberToObject(dta, "z", ECEF_struct -> z);
+  // cJSON_AddNumberToObject(dta, "accuracy", ECEF_struct -> accuracy);
+  // cJSON_AddNumberToObject(dta, "n_sats", ECEF_struct -> n_sats);
+  // cJSON_AddNumberToObject(dta, "flags", ECEF_struct -> flags );
+//  slog(2, SLOG_LIVE, cJSON_PrintUnformatted(root));
 
-  cJSON_Delete(root);
+  // cJSON_Delete(root);
 
+  tmLastSuccessfulRead = time(NULL);
 
   // output items in structure
-  if (blnDebugToScreen == 13) {fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));}
-  if (blnDebugToScreen == 13) {fprintf(stdout, "tow = %d ms; ", ECEF_struct -> tow);}
-  if (blnDebugToScreen == 13) {fprintf(stdout, "-> x/y/z = %lf/%lf/%lf ", ECEF_struct -> x,  ECEF_struct -> y,  ECEF_struct -> z);}
+  if (blnDebugToScreen == 13) {
+    // fprintf(stdout, "JSON string is %s\n", cJSON_PrintUnformatted(root));
+  }
+  if (blnDebugToScreen == 13) {
+    fprintf(stdout, "tow = %d ms; ", ECEF_struct -> tow);
+  }
+  if (blnDebugToScreen == 13) {
+    fprintf(stdout, "-> x/y/z = %lf/%lf/%lf ", ECEF_struct -> x,  ECEF_struct -> y,  ECEF_struct -> z);
+  }
 
   //if (blnDebugToScreen == 13) {fprintf(stdout, "%s\n", __FUNCTION__);}
   

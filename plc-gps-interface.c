@@ -1,3 +1,5 @@
+#define HeartBeatTimeout 10 // if a timeout isn't received in this number of seconds, then attempt to reestablish connection.
+#define OKMessageInterval 4 // send a message every x seconds when we're receiving messages from the GPS device
 #define reg_MSG_GPS_TIME_wn 100
 #define reg_MSG_GPS_TIME_tow 101
 #define reg_MSG_GPS_TIME_ns_residual 103
@@ -50,6 +52,8 @@
 #define reg_MSG_BASELINE_ECEF_n_sats 183
 #define reg_MSG_BASELINE_ECEF_flags 184
 
+#define reg_UNIX_EPOCH_TIME 185
+
 // this macro is defined in libmodbus 3.14, but not in 3.06. 
 // As it is very useful, I will define it here with an ifndef which "should" not break if we upgrade to 3.14
 #ifndef MODBUS_SET_INT32_TO_INT16 
@@ -57,6 +61,16 @@
     do { \
         tab_int16[(index)    ] = (value) >> 16; \
         tab_int16[(index) + 1] = (value); \
+    } while (0)
+#endif
+
+#ifndef MODBUS_SET_INT64_TO_INT16 
+# define MODBUS_SET_INT64_TO_INT16(tab_int16, index, value) \
+    do { \
+        tab_int16[(index)    ] = (value) >> 48; \
+        tab_int16[(index) + 1] = (value) >> 32; \
+        tab_int16[(index) + 2] = (value) >> 16; \
+        tab_int16[(index) + 3] = (value); \
     } while (0)
 #endif
 
@@ -82,6 +96,7 @@
 #include <slog.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <time.h>
 
 char strDummyInput[100];
 char *serial_port_name = NULL;
@@ -105,10 +120,25 @@ static sbp_msg_callbacks_node_t imu_raw_callback_node;
 static sbp_msg_callbacks_node_t baseline_ecef_callback_node;
 static sbp_msg_callbacks_node_t pos_ecef_callback_node;
 
+char blnGPSTimeEnabled;
+char blnIMUEnabled;
+char blnUTCTimeEnabled;
+char blnBasePosEnabled;
+char blnLLHPosEnabled;
+char blnBaseNEDEnabled;
+char blnECEFEnabled;
+char blnVelNEDEnabled;
+char blnHeartbeatEnabled;
+
+piksi_data_t *CurrentData;
+sbp_state_t sbp_state;
+
 
 
 int updateRegistersFromStruct(piksi_data_t *piksi_struct, modbus_mapping_t *mb_mapping)
 {
+  time_t tmCurrentTime = time(NULL);
+
   mb_mapping->tab_registers[reg_MSG_GPS_TIME_wn] = piksi_struct->GPS_time_data->wn;
   
   
@@ -184,6 +214,7 @@ int updateRegistersFromStruct(piksi_data_t *piksi_struct, modbus_mapping_t *mb_m
   mb_mapping->tab_registers[reg_MSG_POS_ECEF_n_sats] = piksi_struct->ECEF_data->n_sats;
   mb_mapping->tab_registers[reg_MSG_POS_ECEF_flags] = piksi_struct->ECEF_data->flags;
 
+  // baseline ECEF data
   MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_BASELINE_ECEF_tow, piksi_struct->baseline_ECEF_data->tow);
   MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_BASELINE_ECEF_x, piksi_struct->baseline_ECEF_data->x);
   MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_BASELINE_ECEF_y, piksi_struct->baseline_ECEF_data->y);
@@ -191,8 +222,9 @@ int updateRegistersFromStruct(piksi_data_t *piksi_struct, modbus_mapping_t *mb_m
   mb_mapping->tab_registers[reg_MSG_BASELINE_ECEF_accuracy] = piksi_struct->baseline_ECEF_data->accuracy;
   mb_mapping->tab_registers[reg_MSG_BASELINE_ECEF_n_sats] = piksi_struct->baseline_ECEF_data->n_sats;
   mb_mapping->tab_registers[reg_MSG_BASELINE_ECEF_flags] = piksi_struct->baseline_ECEF_data->flags;
-
-
+  
+  // set current system time into 4 registers. can be used for heartbeat to prove comms. using GPS time 
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_UNIX_EPOCH_TIME, (unsigned long)(tmCurrentTime) );
   
   return 0;
 }
@@ -206,9 +238,11 @@ int runModBusTcpServer(piksi_data_t *piksi_struct)
   int rc;
   int nPort = 502; // port number for modbus
   // we only need holding registers. will define a few of each other type just in case
-  fprintf(stdout, "creating modbus mapping\n");
+
+  slog(0, SLOG_INFO, "creating modbus mapping\n");
   mb_mapping = modbus_mapping_new(1000, 1000, 10000, 1000);
-  fprintf(stdout, "modbus mapping complete\n");
+  slog(0, SLOG_INFO, "modbus mapping complete\n");
+
   if (mb_mapping == NULL) {
       fprintf(stderr, "Failed to allocate the mapping: %s\n", modbus_strerror(errno));
       slog(0, SLOG_ERROR, "Failed to allocate the mapping: %s\n", modbus_strerror(errno));
@@ -216,17 +250,18 @@ int runModBusTcpServer(piksi_data_t *piksi_struct)
       return -1;
   }
 
-  fprintf(stdout, "Waiting for TCP connection on Port %i \n",nPort);
+  // fprintf(stdout, "Waiting for TCP connection on Port %i \n",nPort);
   slog(0, SLOG_INFO, "Waiting for TCP connection on Port %i \n",nPort);
 
-  fprintf(stdout, "binding to all tcp ports\n");
+  slog(0, SLOG_INFO, "binding to all tcp ports\n",nPort);
   ctx = modbus_new_tcp("0.0.0.0", nPort); // 0.0.0.0 means to listen on all IP addresses
-  fprintf(stdout, "all tcp ports bound\n");
+  slog(0, SLOG_INFO, "all tcp ports bound\n",nPort);
   //modbus_set_debug(ctx, TRUE);
   
   socket = modbus_tcp_listen(ctx, 1);
   modbus_tcp_accept(ctx, &socket);
-  fprintf(stdout, "TCP connection started!\n");
+  
+  //fprintf(stdout, "TCP connection started!\n");
   slog(0, SLOG_INFO, "TCP connection started!\n");
   
   for(;;) 
@@ -264,10 +299,10 @@ void usage(char *prog_name) {
   slog(0, SLOG_ERROR, "usage: %s [-p serial port] [ -b baud rate] \n", prog_name);
 }
 
-void setup_socket()
+void setup_socket(struct sockaddr_in server)
 {
-  struct sockaddr_in server;
-  socket_desc = socket(AF_INET , SOCK_STREAM , 0);
+  // struct sockaddr_in server;
+  socket_desc = socket(AF_INET , SOCK_STREAM | SOCK_NONBLOCK , 0); // changed it to be non-blocking sockets. unsure of the ramifications as things currently stand
   if (socket_desc == -1)
   {
     fprintf(stderr, "Could not create socket\n");
@@ -284,12 +319,18 @@ void setup_socket()
   }
 }
 
+void reconnect_socket(struct sockaddr_in server)
+{
+  if (connect(socket_desc, (struct sockaddr *)&server , sizeof(server)) < 0)
+  {
+    fprintf(stderr, "Connection error\n");
+  }
+}
+
 void close_socket()
 {
   close(socket_desc);
 }
-
-
 
 
 void setup_port()
@@ -354,28 +395,93 @@ s32 piksi_port_read(u8 *buff, u32 n, void *context)
   return result;
 }
 
+void sbp_setup_all()
+{
+
+  sbp_state_init(&sbp_state);
+
+  // register callback functions for each sbp message we wish to process
+  
+  if (blnHeartbeatEnabled)  {
+	sbp_register_callback(&sbp_state, SBP_MSG_HEARTBEAT, &heartbeat_callback, (void*)CurrentData,
+						&heartbeat_callback_node);
+  }
+
+  if (blnBasePosEnabled) {
+	sbp_register_callback(&sbp_state, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, (void*)CurrentData,
+						&base_pos_llh_callback_node);
+  }
+
+  if (blnLLHPosEnabled) {
+	sbp_register_callback(&sbp_state, SBP_MSG_POS_LLH, &pos_llh_callback, (void*)CurrentData,
+						&pos_llh_callback_node);
+  }
+
+  if (blnBaseNEDEnabled) {
+	sbp_register_callback(&sbp_state, SBP_MSG_BASELINE_NED, &baseline_ned_callback, (void*)CurrentData,
+						  &baseline_ned_callback_node);
+  }
+  if (blnVelNEDEnabled) {
+	sbp_register_callback(&sbp_state, SBP_MSG_VEL_NED, &vel_ned_callback, (void*)CurrentData,
+						  &vel_ned_callback_node);
+  }
+
+  if (blnGPSTimeEnabled) {
+	sbp_register_callback(&sbp_state, SBP_MSG_GPS_TIME, &gps_time_callback, (void*)CurrentData,
+						&gps_time_callback_node);
+	fprintf(stdout, "registering gps_time_callback\n");
+  }
+						
+  if (blnUTCTimeEnabled) {
+	sbp_register_callback(&sbp_state, SBP_MSG_UTC_TIME, &utc_time_callback, (void*)CurrentData,
+						&utc_time_callback_node);
+  }
+
+  if (blnIMUEnabled) {
+	sbp_register_callback(&sbp_state, SBP_MSG_IMU_RAW, &imu_raw_callback, (void*)CurrentData,
+						  &imu_raw_callback_node);
+  }
+
+  if (blnECEFEnabled) {
+	sbp_register_callback(&sbp_state, SBP_MSG_BASELINE_ECEF, &baseline_ecef_callback, (void*)CurrentData,
+						  &baseline_ecef_callback_node);
+	fprintf(stdout, "registering baseline_ecef_callback\n");
+  }
+
+  if (blnECEFEnabled) {
+	sbp_register_callback(&sbp_state, SBP_MSG_POS_ECEF, &pos_ecef_callback, (void*)CurrentData,
+						  &pos_ecef_callback_node);
+	fprintf(stdout, "registering pos_ecef_callback\n");
+  }
+}
 
 int main(int argc, char **argv)
 {
-  //fprintf(fLogFile, ".1\n");
   int opt;
   int result = 0;
   int intBaudRate = 115200;
-  sbp_state_t s;
-
-
   char blnEthernetComms = 1;
-  char blnGPSTimeEnabled = 1;
-  char blnIMUEnabled = 1;
-  char blnUTCTimeEnabled = 1;
-  char blnBasePosEnabled = 1;
-  char blnLLHPosEnabled = 1;
-  char blnBaseNEDEnabled = 1;
-  char blnECEFEnabled = 1;
-  char blnVelNEDEnabled = 1;
-  char blnPiksiOutputEnabled=1;
-  char blnHeartbeatEnabled = 1;
+  time_t tmCurrentTime;
 
+  struct sockaddr_in server;
+
+  blnGPSTimeEnabled = 1;
+  blnIMUEnabled = 1;
+  blnUTCTimeEnabled = 1;
+  blnBasePosEnabled = 1;
+  blnLLHPosEnabled = 1;
+  blnBaseNEDEnabled = 1;
+  blnECEFEnabled = 1;
+  blnVelNEDEnabled = 1;
+  blnHeartbeatEnabled = 1;
+  
+  
+  // fLogFile = fopen("outfile.txt", "w"); // write only 
+  
+  tmLastHeartbeat = time(NULL); // initialise last heartbeat to a time value, so first time comparison doesn't fail 
+  
+  time_t tmLastHeartbeatOKMessage = time(NULL); // temp variable to output diagnosis messages every 5 seconds
+  
   blnDebugToScreen = 1;
 //  slog_init("plc-gps-interface", "slog.cfg", 1, 1);
   slog_init("plc-gps-interface", "slog.cfg", 1, 3, 1);
@@ -385,8 +491,8 @@ int main(int argc, char **argv)
   int parpid = getpid(), childpid;
   fprintf(stdout, "parent processID=%d\n", parpid);
   slog(0, SLOG_INFO, "parent processID=%d\n", parpid);
-  piksi_data_t *CurrentData = (piksi_data_t *)mmap(NULL, sizeof(*CurrentData), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
-  //piksi_data_t *CurrentData = calloc(1, sizeof(*CurrentData));
+  //piksi_data_t *CurrentData = (piksi_data_t *)mmap(NULL, sizeof(*CurrentData), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  CurrentData = (piksi_data_t *)mmap(NULL, sizeof(*CurrentData), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
   piksi_data_setup(CurrentData);
   
   if (argc <= 1) {
@@ -394,7 +500,7 @@ int main(int argc, char **argv)
     exit(EXIT_FAILURE);
   }
 
-  while ((opt = getopt(argc, argv, "p:b:gufinvlead")) != -1) 
+  while ((opt = getopt(argc, argv, "p:b:gufinvlead")) != -1) // get arguments
   {
     switch (opt) {
       case 'm': // mode of communication - IP or serial
@@ -460,39 +566,6 @@ int main(int argc, char **argv)
           }
         }
         break;
-/*      case 'p':
-        serial_port_name = (char *)calloc(strlen(optarg) + 1, sizeof(char));
-        if (!serial_port_name) {
-          fprintf(stderr, "Cannot allocate memory!\n");
-          slog(0, SLOG_ERROR, "Cannot allocate memory!\n");
-          exit(EXIT_FAILURE);
-        }
-        strcpy(serial_port_name, optarg);
-        fprintf(stdout, "serial port set to \"%s\"\n", serial_port_name);
-        slog(0, SLOG_INFO, "serial port set to \"%s\"\n", serial_port_name);
-        break;
-        
-      case 'b':
-        {
-           long l = -1;
-           l=strtol(optarg, 0, 10);
-
-           if ((!optarg) ||  (l <= 0))
-             { 
-                fprintf(stderr, "invalid baud rate under option -b  %s - expecting a number\n", optarg?optarg:"");
-                
-                slog(0, SLOG_ERROR, "invalid baud rate under option -b  %s - expecting a number\n", optarg?optarg:"");
-                
-                //fprintf(stdout, "b\n");
-                usage(argv[0]);
-                exit(EXIT_FAILURE);
-             };
-           intBaudRate = (int) l;
-        }
-        fprintf(stdout, "baud rate set to %d\n\n", intBaudRate);
-        slog(0, SLOG_INFO, "baud rate set to %d\n\n", intBaudRate);
-        break;
-        */
       case 'g': // if parameter is in existence, then disable GPS Time callback function
         blnGPSTimeEnabled = 0; // disable GPS Time callback function
         fprintf(stdout, "GPS Time disabled\n");
@@ -543,17 +616,13 @@ int main(int argc, char **argv)
         fprintf(stdout, "info and debug messages enabled to screen\n");
         slog(0, SLOG_INFO, "info and debug messages enabled to screen\n");
         break;
-      /*case 'h':
-        usage(argv[0]);
-        exit(EXIT_FAILURE);*/
+//      case 'h':
+//        usage(argv[0]);
+//        exit(EXIT_FAILURE);
     }
   }
 
-  //fprintf(stdout, "Type any character and press enter to continue\n");
-  //scanf("%s", strDummyInput); // wait so we can read output
-
-  
-  switch ((childpid = fork())) 
+  switch ((childpid = fork()))  // start separate process for ModbusTCP server
   {
   case -1:
     err(1, "fork");
@@ -586,9 +655,10 @@ int main(int argc, char **argv)
       exit(EXIT_FAILURE);
     }
     
-    setup_socket();
+    setup_socket(server);
   }
   else {
+	  
   
     if (!serial_port_name) {
       fprintf(stderr, "Please supply the serial port path where the Piksi is connected!\n");
@@ -612,81 +682,69 @@ int main(int argc, char **argv)
     }
 
     setup_port();
-  }
+}
   
-  sbp_state_init(&s);
+  sbp_setup_all();
 
-  // register callback functions for each sbp message we wish to process
   
-  if ((blnPiksiOutputEnabled) && (blnHeartbeatEnabled))  {
-  sbp_register_callback(&s, SBP_MSG_HEARTBEAT, &heartbeat_callback, (void*)CurrentData,
-                        &heartbeat_callback_node);
-  }
-
-  if ((blnPiksiOutputEnabled) && (blnBasePosEnabled)) {
-  sbp_register_callback(&s, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, (void*)CurrentData,
-                        &base_pos_llh_callback_node);
-  }
-
-  if ((blnPiksiOutputEnabled) && (blnLLHPosEnabled)) {
-  sbp_register_callback(&s, SBP_MSG_POS_LLH, &pos_llh_callback, (void*)CurrentData,
-                        &pos_llh_callback_node);
-  }
-
-  if ((blnPiksiOutputEnabled) && (blnBaseNEDEnabled)) {
-    sbp_register_callback(&s, SBP_MSG_BASELINE_NED, &baseline_ned_callback, (void*)CurrentData,
-                          &baseline_ned_callback_node);
-  }
-  if ((blnPiksiOutputEnabled) && (blnVelNEDEnabled)) {
-    sbp_register_callback(&s, SBP_MSG_VEL_NED, &vel_ned_callback, (void*)CurrentData,
-                          &vel_ned_callback_node);
-  }
-
-  if ((blnPiksiOutputEnabled) && (blnGPSTimeEnabled)) {
-	sbp_register_callback(&s, SBP_MSG_GPS_TIME, &gps_time_callback, (void*)CurrentData,
-                        &gps_time_callback_node);
-	fprintf(stdout, "registering gps_time_callback\n");
-  }
-						
-  if ((blnPiksiOutputEnabled) && (blnUTCTimeEnabled)) {
-	sbp_register_callback(&s, SBP_MSG_UTC_TIME, &utc_time_callback, (void*)CurrentData,
-                        &utc_time_callback_node);
-  }
-
-  if ((blnPiksiOutputEnabled) && (blnIMUEnabled)) {
-    sbp_register_callback(&s, SBP_MSG_IMU_RAW, &imu_raw_callback, (void*)CurrentData,
-                          &imu_raw_callback_node);
-  }
-
-  if ((blnPiksiOutputEnabled) && (blnECEFEnabled)) {
-    sbp_register_callback(&s, SBP_MSG_BASELINE_ECEF, &baseline_ecef_callback, (void*)CurrentData,
-                          &baseline_ecef_callback_node);
-	fprintf(stdout, "registering baseline_ecef_callback\n");
-  }
-
-  if ((blnPiksiOutputEnabled) && (blnECEFEnabled)) {
-    sbp_register_callback(&s, SBP_MSG_POS_ECEF, &pos_ecef_callback, (void*)CurrentData,
-                          &pos_ecef_callback_node);
-	fprintf(stdout, "registering pos_ecef_callback\n");
-  }
-
-
   if (blnEthernetComms) {
     while(1) {
-      sbp_process(&s, &socket_read); // process requests from Piksi Multi over Ethernet
+	  
+
+      tmCurrentTime = time(NULL);
+      if ((blnHeartbeatEnabled) &&(tmCurrentTime - tmLastHeartbeat > HeartBeatTimeout) ) // heartbeat enabled and we haven't received a heartbeat in x seconds..
+      {
+
+        slog(0, SLOG_INFO, "Heartbeat not detected in %ld seconds\n", (unsigned long)(tmCurrentTime - tmLastHeartbeat));
+        // fprintf(stderr, "Heartbeat not detected in %ld seconds\n", (unsigned long)(tmCurrentTime - tmLastHeartbeat));
+
+        // if a heartbeat is not detected, its likely comms is lost to the GPS device. 
+        // attempt to setup the socket again
+        slog(0, SLOG_INFO, "Attempt to reconnect socket\n");
+        close_socket();
+		
+		setup_socket(server);
+        //reconnect_socket(server);
+        slog(0, SLOG_INFO, "Setup socket command issued.\n");
+        sbp_setup_all();
+        tmLastHeartbeat = time(NULL);
+      }
+	  else
+	  {
+         if (( tmCurrentTime - tmLastHeartbeatOKMessage > OKMessageInterval) && (tmCurrentTime - tmLastSuccessfulRead < OKMessageInterval))
+		 {
+            slog(2, SLOG_INFO, "Connection to GPS OK. Received a messages within the last %d seconds. so only showing every %d seconds\n", OKMessageInterval, OKMessageInterval);
+            slog(2, SLOG_INFO, "baseline_ECEF. tow=%d, x=%d, y=%d, z=%d, accuracy=%d, n_sats=%d, flags=%d ", CurrentData->baseline_ECEF_data->tow, CurrentData->baseline_ECEF_data->x, 
+						CurrentData->baseline_ECEF_data->y, CurrentData->baseline_ECEF_data->z, CurrentData->baseline_ECEF_data->accuracy, 
+						CurrentData->baseline_ECEF_data->n_sats, CurrentData->baseline_ECEF_data->flags);
+            slog(2, SLOG_INFO, "POS_ECEF. tow=%d, x=%lf,x_whole=%d, x_decimal=%d, y=%lf, z=%lf, accuracy=%d, n_sats=%d, flags=%d ", CurrentData->ECEF_data->tow, 
+						CurrentData->ECEF_data->x, (int)(CurrentData->ECEF_data->x),(int)(((CurrentData->ECEF_data->x)- (int)(CurrentData->ECEF_data->x)) *1000)
+						CurrentData->ECEF_data->y, CurrentData->ECEF_data->z, CurrentData->ECEF_data->accuracy, 
+						CurrentData->ECEF_data->n_sats, CurrentData->ECEF_data->flags);
+			
+			
+			tmLastHeartbeatOKMessage = time(NULL);
+		 }
+	  }
+      
+	  //fprintf(fLogFile, "Current time = %ld. Time since last heartbeat = %ld\n" , (unsigned long)(tmCurrentTime), (unsigned long)(tmCurrentTime - tmLastHeartbeat) );
+
+      sbp_process(&sbp_state, &socket_read); // process requests from Piksi Multi over Ethernet
+
+	  
     }
     close_socket();
   }  
   else {
     while(1) {
-      sbp_process(&s, &piksi_port_read); // process requests from Piksi Multi over serial
+      sbp_process(&sbp_state, &piksi_port_read); // process requests from Piksi Multi over serial
     }
   }
 
 
   
   piksi_data_close(CurrentData);
-  //fclose(fLogFile);
+  // fclose(fLogFile);
   //free(tcp_ip_addr);
   //free(tcp_ip_port);
   //free(serial_port_name);

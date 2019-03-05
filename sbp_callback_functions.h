@@ -15,7 +15,8 @@
  #include <libsbp/navigation.h>
  #include <libsbp/imu.h>
  #include <slog.h>
- #include "cJSON.h"
+ // #include "cJSON.h"
+ #include <time.h>
 
 typedef struct {
   // see definition of SBP protocol at https://github.com/swift-nav/libsbp/blob/master/docs/sbp.pdf
@@ -46,6 +47,11 @@ int piksi_data_close(piksi_data_t *piksidata);
 FILE * fp;
 FILE *fLogFile;
 char blnDebugToScreen;
+time_t tmLastHeartbeat;
+time_t tmLastSuccessfulRead;
+
+
+
 
 void heartbeat_callback(u16 sender_id, u8 len, u8 msg[], void *context);
 
