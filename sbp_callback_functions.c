@@ -2,8 +2,9 @@
 
 int piksi_data_setup(piksi_data_t *piksidata)
 {
-  
-  piksi_data_t *CurrentData     = (piksi_data_t *)       mmap(NULL, sizeof(*CurrentData),                  PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+
+  // CurrentData is piksidata. one is used globally, the other passed by reference. should probably consolidate this!
+  piksi_data_t *CurrentData     = (piksi_data_t *)       mmap(NULL, sizeof(*CurrentData),                  PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0); 
   piksidata->GPS_time_data      = (msg_gps_time_t *)     mmap(NULL, sizeof(piksidata->GPS_time_data),      PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
   piksidata->baseline_NED_data  = (msg_baseline_ned_t *) mmap(NULL, sizeof(piksidata->baseline_NED_data),  PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
   piksidata->LLH_data           = (msg_pos_llh_t *)      mmap(NULL, sizeof(piksidata->LLH_data),           PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
@@ -11,8 +12,16 @@ int piksi_data_setup(piksi_data_t *piksidata)
   piksidata->IMU_data           = (msg_imu_raw_t *)      mmap(NULL, sizeof(piksidata->IMU_data),           PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
   piksidata->ECEF_data          = (msg_pos_ecef_t *)     mmap(NULL, sizeof(piksidata->ECEF_data),          PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
   piksidata->baseline_ECEF_data = (msg_baseline_ecef_t *)mmap(NULL, sizeof(piksidata->baseline_ECEF_data), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksidata->UTC_data           = (msg_utc_time_t *)     mmap(NULL, sizeof(piksidata->UTC_data),           PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
 
-  fprintf(stdout, "piksi_data_setup complete. totalsize = %d bytes\n", (int)(sizeof (*piksidata) + sizeof(piksidata-> GPS_time_data) + sizeof(piksidata-> baseline_NED_data) + sizeof(piksidata-> LLH_data) + sizeof(piksidata-> NED_velocity_data) + sizeof(piksidata-> IMU_data)) );
+  slog(0, SLOG_INFO, "piksi_data_setup complete. totalsize = %d bytes\n", 
+      (int)(
+	  sizeof (*piksidata) + sizeof(piksidata-> GPS_time_data) + 
+	  sizeof(piksidata-> baseline_NED_data) + sizeof(piksidata-> LLH_data) + 
+	  sizeof(piksidata-> NED_velocity_data) + sizeof(piksidata-> IMU_data) +
+	  sizeof(piksidata-> ECEF_data) + sizeof(piksidata-> baseline_ECEF_data)  + sizeof(piksidata-> UTC_data) 
+	  ) );
+
   
   return 0; // need to add error code here
 }
@@ -27,6 +36,7 @@ int piksi_data_close(piksi_data_t *piksidata)
   munmap(piksidata->IMU_data, sizeof(piksidata->IMU_data));
   munmap(piksidata->ECEF_data, sizeof(piksidata->ECEF_data));
   munmap(piksidata->baseline_ECEF_data, sizeof(piksidata->baseline_ECEF_data));
+  munmap(piksidata->UTC_data, sizeof(piksidata->UTC_data));
 
   munmap(piksidata, sizeof(piksidata));
 
@@ -250,12 +260,12 @@ void utc_time_callback(u16 sender_id, u8 len, u8 msg[], void *context)
 {
   (void)sender_id, (void)len, (void)msg, (void)context;
   
-  //piksi_data_t *piksi_data= (piksi_data_t*)context;
+  piksi_data_t *piksi_data= (piksi_data_t*)context;
   msg_utc_time_t *utc_time_struct;
   
   utc_time_struct = (msg_utc_time_t *) msg; // cast msg pointer to appropriate type and save for later use
   
-  //memcpy( piksi_data-> ?????, utc_time_struct, sizeof(*utc_time_struct));
+  memcpy( piksi_data->UTC_data, utc_time_struct, sizeof(*utc_time_struct));
 
   // output items in structure
   // cJSON *root;

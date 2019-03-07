@@ -38,6 +38,7 @@ typedef struct {
   msg_dgnss_status_t *dgnss_status;
   msg_heartbeat_t *heartbeat_data;
   msg_imu_raw_t *IMU_data;
+  msg_utc_time_t *UTC_data;
   
   
 } piksi_data_t;

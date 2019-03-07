@@ -4,6 +4,7 @@
 #define reg_MSG_GPS_TIME_tow 101
 #define reg_MSG_GPS_TIME_ns_residual 103
 #define reg_MSG_GPS_TIME_flags 105
+
 #define reg_MSG_BASELINE_NED_tow 106
 #define reg_MSG_BASELINE_NED_n 108
 #define reg_MSG_BASELINE_NED_e 110
@@ -12,6 +13,7 @@
 #define reg_MSG_BASELINE_NED_v_accuracy 115
 #define reg_MSG_BASELINE_NED_n_sats 116
 #define reg_MSG_BASELINE_NED_flags 117
+
 #define reg_MSG_POS_LLH_tow 118
 #define reg_MSG_POS_LLH_lat 120
 #define reg_MSG_POS_LLH_lon 124
@@ -20,6 +22,7 @@
 #define reg_MSG_POS_LLH_v_accuracy 133
 #define reg_MSG_POS_LLH_n_sats 134
 #define reg_MSG_POS_LLH_flags 135
+
 #define reg_MSG_VEL_NED_tow 136
 #define reg_MSG_VEL_NED_n 138
 #define reg_MSG_VEL_NED_e 140
@@ -28,6 +31,7 @@
 #define reg_MSG_VEL_NED_v_accuracy 145
 #define reg_MSG_VEL_NED_n_sats 146
 #define reg_MSG_VEL_NED_flags 147
+
 #define reg_MSG_IMU_RAW_tow 148
 #define reg_MSG_IMU_RAW_tow_f 150
 #define reg_MSG_IMU_RAW_acc_x 151
@@ -39,11 +43,15 @@
 
 #define reg_MSG_POS_ECEF_tow 157
 #define reg_MSG_POS_ECEF_x 159
+#define reg_MSG_POS_ECEF_x_decimal 161
 #define reg_MSG_POS_ECEF_y 163
+#define reg_MSG_POS_ECEF_y_decimal 165
 #define reg_MSG_POS_ECEF_z 167
+#define reg_MSG_POS_ECEF_z_decimal 169
 #define reg_MSG_POS_ECEF_accuracy 171
 #define reg_MSG_POS_ECEF_n_sats 172
 #define reg_MSG_POS_ECEF_flags 173
+
 #define reg_MSG_BASELINE_ECEF_tow 174
 #define reg_MSG_BASELINE_ECEF_x 176
 #define reg_MSG_BASELINE_ECEF_y 178
@@ -53,6 +61,18 @@
 #define reg_MSG_BASELINE_ECEF_flags 184
 
 #define reg_UNIX_EPOCH_TIME 185
+
+#define reg_MSG_UTC_TIME_flags 187
+#define reg_MSG_UTC_TIME_tow 188
+#define reg_MSG_UTC_TIME_year 190
+#define reg_MSG_UTC_TIME_month 191
+#define reg_MSG_UTC_TIME_day 192
+#define reg_MSG_UTC_TIME_hours 193
+#define reg_MSG_UTC_TIME_minutes 194
+#define reg_MSG_UTC_TIME_seconds 195
+#define reg_MSG_UTC_TIME_ns 196
+
+
 
 // this macro is defined in libmodbus 3.14, but not in 3.06. 
 // As it is very useful, I will define it here with an ifndef which "should" not break if we upgrade to 3.14
@@ -133,6 +153,13 @@ char blnHeartbeatEnabled;
 piksi_data_t *CurrentData;
 sbp_state_t sbp_state;
 
+// These are for runModBusTcpServerMulti. not required if we don't complete the multithreaded version.
+static modbus_t *ctx = NULL;
+static modbus_mapping_t *mb_mapping;
+static int server_socket = -1;
+// end of definitions for runModBusTcpServerMulti. Remove to here if its removed.
+
+
 
 
 int updateRegistersFromStruct(piksi_data_t *piksi_struct, modbus_mapping_t *mb_mapping)
@@ -198,18 +225,12 @@ int updateRegistersFromStruct(piksi_data_t *piksi_struct, modbus_mapping_t *mb_m
 
   // pos ECEF data
   MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_POS_ECEF_tow, piksi_struct->ECEF_data->tow);
-  mb_mapping->tab_registers[reg_MSG_POS_ECEF_x] = 0; // temporarily set to 0 till 64 bit float support is implemented
-  mb_mapping->tab_registers[reg_MSG_POS_ECEF_x+1] = 0; 
-  mb_mapping->tab_registers[reg_MSG_POS_ECEF_x+2] = 0; 
-  mb_mapping->tab_registers[reg_MSG_POS_ECEF_x+3] = 0; 
-  mb_mapping->tab_registers[reg_MSG_POS_ECEF_y] = 0; // temporarily set to 0 till 64 bit float support is implemented
-  mb_mapping->tab_registers[reg_MSG_POS_ECEF_y+1] = 0; 
-  mb_mapping->tab_registers[reg_MSG_POS_ECEF_y+2] = 0; 
-  mb_mapping->tab_registers[reg_MSG_POS_ECEF_y+3] = 0; 
-  mb_mapping->tab_registers[reg_MSG_POS_ECEF_z] = 0; // temporarily set to 0 till 64 bit float support is implemented
-  mb_mapping->tab_registers[reg_MSG_POS_ECEF_z+1] = 0; 
-  mb_mapping->tab_registers[reg_MSG_POS_ECEF_z+2] = 0; 
-  mb_mapping->tab_registers[reg_MSG_POS_ECEF_z+3] = 0; 
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_POS_ECEF_x, (int)(CurrentData->ECEF_data->x)); // output whole number as 32 bit integer 
+  mb_mapping->tab_registers[reg_MSG_POS_ECEF_x_decimal] = abs((int)(((CurrentData->ECEF_data->x)- (int)(CurrentData->ECEF_data->x)) *10000)); // output remainder as integer to 4dp. accuracy
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_POS_ECEF_y, (int)(CurrentData->ECEF_data->y)); // output whole number as 32 bit integer 
+  mb_mapping->tab_registers[reg_MSG_POS_ECEF_y_decimal] = abs((int)(((CurrentData->ECEF_data->y)- (int)(CurrentData->ECEF_data->y)) *10000)); // output remainder as integer to 4dp. accuracy
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_POS_ECEF_z, (int)(CurrentData->ECEF_data->z)); // output whole number as 32 bit integer 
+  mb_mapping->tab_registers[reg_MSG_POS_ECEF_z_decimal] = abs((int)(((CurrentData->ECEF_data->z)- (int)(CurrentData->ECEF_data->z)) *10000)); // output remainder as integer to 4dp. accuracy
   mb_mapping->tab_registers[reg_MSG_POS_ECEF_accuracy] = piksi_struct->ECEF_data->accuracy;
   mb_mapping->tab_registers[reg_MSG_POS_ECEF_n_sats] = piksi_struct->ECEF_data->n_sats;
   mb_mapping->tab_registers[reg_MSG_POS_ECEF_flags] = piksi_struct->ECEF_data->flags;
@@ -225,6 +246,19 @@ int updateRegistersFromStruct(piksi_data_t *piksi_struct, modbus_mapping_t *mb_m
   
   // set current system time into 4 registers. can be used for heartbeat to prove comms. using GPS time 
   MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_UNIX_EPOCH_TIME, (unsigned long)(tmCurrentTime) );
+  
+  // UTC time data
+  mb_mapping->tab_registers[reg_MSG_UTC_TIME_flags] = piksi_struct->UTC_data->flags;
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_UTC_TIME_tow, piksi_struct->UTC_data->tow);
+  mb_mapping->tab_registers[reg_MSG_UTC_TIME_year] = piksi_struct->UTC_data->year;
+  mb_mapping->tab_registers[reg_MSG_UTC_TIME_month] = piksi_struct->UTC_data->month;
+  mb_mapping->tab_registers[reg_MSG_UTC_TIME_day] = piksi_struct->UTC_data->day;
+  mb_mapping->tab_registers[reg_MSG_UTC_TIME_hours] = piksi_struct->UTC_data->hours;
+  mb_mapping->tab_registers[reg_MSG_UTC_TIME_minutes] = piksi_struct->UTC_data->minutes;
+  mb_mapping->tab_registers[reg_MSG_UTC_TIME_seconds] = piksi_struct->UTC_data->seconds;
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_UTC_TIME_ns, piksi_struct->UTC_data->ns);
+
+  
   
   return 0;
 }
@@ -250,7 +284,6 @@ int runModBusTcpServer(piksi_data_t *piksi_struct)
       return -1;
   }
 
-  // fprintf(stdout, "Waiting for TCP connection on Port %i \n",nPort);
   slog(0, SLOG_INFO, "Waiting for TCP connection on Port %i \n",nPort);
 
   slog(0, SLOG_INFO, "binding to all tcp ports\n",nPort);
@@ -259,9 +292,9 @@ int runModBusTcpServer(piksi_data_t *piksi_struct)
   //modbus_set_debug(ctx, TRUE);
   
   socket = modbus_tcp_listen(ctx, 1);
-  modbus_tcp_accept(ctx, &socket);
   
-  //fprintf(stdout, "TCP connection started!\n");
+  // immediately start waiting for a request
+  modbus_tcp_accept(ctx, &socket);
   slog(0, SLOG_INFO, "TCP connection started!\n");
   
   for(;;) 
@@ -282,6 +315,7 @@ int runModBusTcpServer(piksi_data_t *piksi_struct)
 	    modbus_close(ctx); // close
 	    // immediately start waiting for another request again
       modbus_tcp_accept(ctx, &socket);
+      slog(0, SLOG_INFO, "TCP connection started!\n");
     }
   }
 
@@ -291,6 +325,127 @@ int runModBusTcpServer(piksi_data_t *piksi_struct)
   modbus_free(ctx);
   return 0;
 }
+
+static void close_sigint(int dummy)
+{
+    if (server_socket != -1) {
+        close(server_socket);
+    }
+    //modbus_free(ctx);
+    //modbus_mapping_free(mb_mapping);
+
+    exit(dummy);
+}
+
+int runModBusTcpServerMulti(piksi_data_t *piksi_struct)
+{
+	int nConnections = 5;
+	int nPort = 502; // port number for modbus
+
+	uint8_t query[MODBUS_TCP_MAX_ADU_LENGTH];
+    int master_socket;
+    int rc;
+    fd_set refset;
+    fd_set rdset;
+    /* Maximum file descriptor number */
+    int fdmax;
+
+	ctx = modbus_new_tcp("0.0.0.0", nPort); // 0.0.0.0 means to listen on all IP addresses
+
+	// we only need holding registers. will define a few of each other type just in case
+
+	slog(0, SLOG_INFO, "creating modbus mapping\n");
+	mb_mapping = modbus_mapping_new(1000, 1000, 10000, 1000);
+	slog(0, SLOG_INFO, "modbus mapping complete\n");
+
+	if (mb_mapping == NULL) {
+	  fprintf(stderr, "Failed to allocate the mapping: %s\n", modbus_strerror(errno));
+	  slog(0, SLOG_ERROR, "Failed to allocate the mapping: %s\n", modbus_strerror(errno));
+	  //modbus_free(ctx);
+	  return -1;
+	}
+
+    server_socket = modbus_tcp_listen(ctx, nConnections);
+    if (server_socket == -1) {
+        fprintf(stderr, "Unable to listen TCP connection\n");
+        modbus_free(ctx);
+        return -1;
+    }
+
+    signal(SIGINT, close_sigint);
+
+    /* Clear the reference set of socket */
+    FD_ZERO(&refset);
+    /* Add the server socket */
+    FD_SET(server_socket, &refset);
+
+    /* Keep track of the max file descriptor */
+    fdmax = server_socket;
+
+    for (;;) {
+        rdset = refset;
+        if (select(fdmax+1, &rdset, NULL, NULL, NULL) == -1) {
+            perror("Server select() failure.");
+            close_sigint(1);
+        }
+
+        /* Run through the existing connections looking for data to be
+         * read */
+        for (master_socket = 0; master_socket <= fdmax; master_socket++) {
+
+            if (!FD_ISSET(master_socket, &rdset)) {
+                continue;
+            }
+
+            if (master_socket == server_socket) {
+                /* A client is asking a new connection */
+                socklen_t addrlen;
+                struct sockaddr_in clientaddr;
+                int newfd;
+
+                /* Handle new connections */
+                addrlen = sizeof(clientaddr);
+                memset(&clientaddr, 0, sizeof(clientaddr));
+                newfd = accept(server_socket, (struct sockaddr *)&clientaddr, &addrlen);
+                if (newfd == -1) {
+                    perror("Server accept() error");
+                } else {
+                    FD_SET(newfd, &refset);
+
+                    if (newfd > fdmax) {
+                        /* Keep track of the maximum */
+                        fdmax = newfd;
+                    }
+                    printf("New connection from %s:%d on socket %d\n",
+                           inet_ntoa(clientaddr.sin_addr), clientaddr.sin_port, newfd);
+                }
+            } else {
+                modbus_set_socket(ctx, master_socket);
+                rc = modbus_receive(ctx, query);
+                if (rc > 0) {
+					updateRegistersFromStruct(piksi_struct, mb_mapping); // request received. populate registers from structure
+                    modbus_reply(ctx, query, rc, mb_mapping);
+                } else if (rc == -1) {
+                    /* This example server in ended on connection closing or
+                     * any errors. */
+                    printf("Connection closed on socket %d\n", master_socket);
+                    close(master_socket);
+
+                    /* Remove from reference set */
+                    FD_CLR(master_socket, &refset);
+
+                    if (master_socket == fdmax) {
+                        fdmax--;
+                    }
+                }
+            }
+        }
+    }
+
+    return 0;
+	
+}
+
 
 
 
@@ -319,19 +474,10 @@ void setup_socket(struct sockaddr_in server)
   }
 }
 
-void reconnect_socket(struct sockaddr_in server)
-{
-  if (connect(socket_desc, (struct sockaddr *)&server , sizeof(server)) < 0)
-  {
-    fprintf(stderr, "Connection error\n");
-  }
-}
-
 void close_socket()
 {
   close(socket_desc);
 }
-
 
 void setup_port()
 {
@@ -373,8 +519,6 @@ void setup_port()
   }
 }
 
-
-
 s32 socket_read(u8 *buff, u32 n, void *context)
 {
   (void)context;
@@ -383,7 +527,6 @@ s32 socket_read(u8 *buff, u32 n, void *context)
   result = read(socket_desc, buff, n);
   return result;
 }
-
 
 s32 piksi_port_read(u8 *buff, u32 n, void *context)
 {
@@ -454,6 +597,8 @@ void sbp_setup_all()
 	fprintf(stdout, "registering pos_ecef_callback\n");
   }
 }
+
+
 
 int main(int argc, char **argv)
 {
@@ -632,7 +777,8 @@ int main(int argc, char **argv)
     fprintf(stdout, "child PID %d\n", childpid);
     slog(0, SLOG_INFO, "child PID %d\n", childpid);
         
-    runModBusTcpServer(CurrentData);
+    //runModBusTcpServer(CurrentData);
+    runModBusTcpServerMulti(CurrentData);
     
     fprintf(stdout, "terminating child process PID %d\n", childpid);
     slog(0, SLOG_INFO, "terminating child process PID %d\n", childpid);
@@ -704,7 +850,6 @@ int main(int argc, char **argv)
         close_socket();
 		
 		setup_socket(server);
-        //reconnect_socket(server);
         slog(0, SLOG_INFO, "Setup socket command issued.\n");
         sbp_setup_all();
         tmLastHeartbeat = time(NULL);
@@ -714,13 +859,13 @@ int main(int argc, char **argv)
          if (( tmCurrentTime - tmLastHeartbeatOKMessage > OKMessageInterval) && (tmCurrentTime - tmLastSuccessfulRead < OKMessageInterval))
 		 {
             slog(2, SLOG_INFO, "Connection to GPS OK. Received a messages within the last %d seconds. so only showing every %d seconds\n", OKMessageInterval, OKMessageInterval);
-            slog(2, SLOG_INFO, "baseline_ECEF. tow=%d, x=%d, y=%d, z=%d, accuracy=%d, n_sats=%d, flags=%d ", CurrentData->baseline_ECEF_data->tow, CurrentData->baseline_ECEF_data->x, 
-						CurrentData->baseline_ECEF_data->y, CurrentData->baseline_ECEF_data->z, CurrentData->baseline_ECEF_data->accuracy, 
-						CurrentData->baseline_ECEF_data->n_sats, CurrentData->baseline_ECEF_data->flags);
-            slog(2, SLOG_INFO, "POS_ECEF. tow=%d, x=%lf,x_whole=%d, x_decimal=%d, y=%lf, z=%lf, accuracy=%d, n_sats=%d, flags=%d ", CurrentData->ECEF_data->tow, 
-						CurrentData->ECEF_data->x, (int)(CurrentData->ECEF_data->x),(int)(((CurrentData->ECEF_data->x)- (int)(CurrentData->ECEF_data->x)) *1000)
-						CurrentData->ECEF_data->y, CurrentData->ECEF_data->z, CurrentData->ECEF_data->accuracy, 
-						CurrentData->ECEF_data->n_sats, CurrentData->ECEF_data->flags);
+            // slog(2, SLOG_INFO, "baseline_ECEF. tow=%d, x=%d, y=%d, z=%d, accuracy=%d, n_sats=%d, flags=%d ", CurrentData->baseline_ECEF_data->tow, CurrentData->baseline_ECEF_data->x, 
+						// CurrentData->baseline_ECEF_data->y, CurrentData->baseline_ECEF_data->z, CurrentData->baseline_ECEF_data->accuracy, 
+						// CurrentData->baseline_ECEF_data->n_sats, CurrentData->baseline_ECEF_data->flags);
+            // slog(2, SLOG_INFO, "POS_ECEF. tow=%d, x=%lf,x_whole=%d, x_decimal=%d, y=%lf, z=%lf, accuracy=%d, n_sats=%d, flags=%d ", CurrentData->ECEF_data->tow, 
+						// CurrentData->ECEF_data->x, (int)(CurrentData->ECEF_data->x),abs((int)(((CurrentData->ECEF_data->x)- (int)(CurrentData->ECEF_data->x)) *1000)),
+						// CurrentData->ECEF_data->y, CurrentData->ECEF_data->z, CurrentData->ECEF_data->accuracy, 
+						// CurrentData->ECEF_data->n_sats, CurrentData->ECEF_data->flags);
 			
 			
 			tmLastHeartbeatOKMessage = time(NULL);
