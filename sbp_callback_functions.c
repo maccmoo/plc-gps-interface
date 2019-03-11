@@ -14,7 +14,7 @@ int piksi_data_setup(piksi_data_t *piksidata)
   piksidata->baseline_ECEF_data = (msg_baseline_ecef_t *)mmap(NULL, sizeof(piksidata->baseline_ECEF_data), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
   piksidata->UTC_data           = (msg_utc_time_t *)     mmap(NULL, sizeof(piksidata->UTC_data),           PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
 
-  slog(0, SLOG_INFO, "piksi_data_setup complete. totalsize = %d bytes\n", 
+  slog(0, SLOG_INFO, "piksi_data_setup complete. totalsize = %d bytes", 
       (int)(
 	  sizeof (*piksidata) + sizeof(piksidata-> GPS_time_data) + 
 	  sizeof(piksidata-> baseline_NED_data) + sizeof(piksidata-> LLH_data) + 

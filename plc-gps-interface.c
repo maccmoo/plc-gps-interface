@@ -273,29 +273,29 @@ int runModBusTcpServer(piksi_data_t *piksi_struct)
   int nPort = 502; // port number for modbus
   // we only need holding registers. will define a few of each other type just in case
 
-  slog(0, SLOG_INFO, "creating modbus mapping\n");
-  mb_mapping = modbus_mapping_new(1000, 1000, 10000, 1000);
-  slog(0, SLOG_INFO, "modbus mapping complete\n");
+  slog(0, SLOG_INFO, "ModbusTCP: creating modbus mapping");
+  mb_mapping = modbus_mapping_new(1000, 1000, 1000, 1000);
+  slog(0, SLOG_INFO, "ModbusTCP: modbus mapping complete");
 
   if (mb_mapping == NULL) {
-      fprintf(stderr, "Failed to allocate the mapping: %s\n", modbus_strerror(errno));
-      slog(0, SLOG_ERROR, "Failed to allocate the mapping: %s\n", modbus_strerror(errno));
+      //fprintf(stderr, "Failed to allocate the mapping: %s\n", modbus_strerror(errno));
+      slog(0, SLOG_ERROR, "ModbusTCP: Failed to allocate the mapping: %s", modbus_strerror(errno));
       //modbus_free(ctx);
       return -1;
   }
 
-  slog(0, SLOG_INFO, "Waiting for TCP connection on Port %i \n",nPort);
+  slog(0, SLOG_INFO, "ModbusTCP: Waiting for TCP connection on Port %i",nPort);
 
-  slog(0, SLOG_INFO, "binding to all tcp ports\n",nPort);
+  slog(0, SLOG_INFO, "ModbusTCP: binding to all tcp ports",nPort);
   ctx = modbus_new_tcp("0.0.0.0", nPort); // 0.0.0.0 means to listen on all IP addresses
-  slog(0, SLOG_INFO, "all tcp ports bound\n",nPort);
+  slog(0, SLOG_INFO, "ModbusTCP: all tcp ports bound",nPort);
   //modbus_set_debug(ctx, TRUE);
   
   socket = modbus_tcp_listen(ctx, 1);
   
   // immediately start waiting for a request
   modbus_tcp_accept(ctx, &socket);
-  slog(0, SLOG_INFO, "TCP connection started!\n");
+  slog(0, SLOG_INFO, "ModbusTCP: TCP connection started!");
   
   for(;;) 
   {
@@ -310,12 +310,12 @@ int runModBusTcpServer(piksi_data_t *piksi_struct)
     else 
     {
       /* Connection closed by the client or server */
-      fprintf(stdout, "Con Closed.\n");
-      slog(0, SLOG_INFO, "Con Closed.\n");
+      //fprintf(stdout, "Con Closed.\n");
+      slog(0, SLOG_INFO, "ModbusTCP: Con Closed.");
 	    modbus_close(ctx); // close
 	    // immediately start waiting for another request again
       modbus_tcp_accept(ctx, &socket);
-      slog(0, SLOG_INFO, "TCP connection started!\n");
+      slog(0, SLOG_INFO, "ModbusTCP: TCP connection started!");
     }
   }
 
@@ -347,39 +347,40 @@ int runModBusTcpServerMulti(piksi_data_t *piksi_struct)
     int rc;
     fd_set refset;
     fd_set rdset;
-    /* Maximum file descriptor number */
+    // Maximum file descriptor number 
     int fdmax;
 
 	ctx = modbus_new_tcp("0.0.0.0", nPort); // 0.0.0.0 means to listen on all IP addresses
 
 	// we only need holding registers. will define a few of each other type just in case
 
-	slog(0, SLOG_INFO, "creating modbus mapping\n");
-	mb_mapping = modbus_mapping_new(1000, 1000, 10000, 1000);
-	slog(0, SLOG_INFO, "modbus mapping complete\n");
+	slog(0, SLOG_INFO, "ModbusTCP: creating modbus mapping");
+	mb_mapping = modbus_mapping_new(1000, 1000, 1000, 1000);
+	slog(0, SLOG_INFO, "ModbusTCP: modbus mapping complete");
 
 	if (mb_mapping == NULL) {
-	  fprintf(stderr, "Failed to allocate the mapping: %s\n", modbus_strerror(errno));
-	  slog(0, SLOG_ERROR, "Failed to allocate the mapping: %s\n", modbus_strerror(errno));
+	  //fprintf(stderr, "Failed to allocate the mapping: %s\n", modbus_strerror(errno));
+	  slog(0, SLOG_ERROR, "ModbusTCP: Failed to allocate the mapping: %s", modbus_strerror(errno));
 	  //modbus_free(ctx);
 	  return -1;
 	}
 
     server_socket = modbus_tcp_listen(ctx, nConnections);
     if (server_socket == -1) {
-        fprintf(stderr, "Unable to listen TCP connection\n");
+        //fprintf(stderr, "Unable to listen TCP connection\n");
+		slog(0, SLOG_ERROR, "ModbusTCP: Unable to listen TCP connection");
         modbus_free(ctx);
         return -1;
     }
 
     signal(SIGINT, close_sigint);
 
-    /* Clear the reference set of socket */
+    // Clear the reference set of socket 
     FD_ZERO(&refset);
-    /* Add the server socket */
+    // Add the server socket 
     FD_SET(server_socket, &refset);
 
-    /* Keep track of the max file descriptor */
+    // Keep track of the max file descriptor 
     fdmax = server_socket;
 
     for (;;) {
@@ -389,8 +390,8 @@ int runModBusTcpServerMulti(piksi_data_t *piksi_struct)
             close_sigint(1);
         }
 
-        /* Run through the existing connections looking for data to be
-         * read */
+        //  Run through the existing connections looking for data to be
+        //  read 
         for (master_socket = 0; master_socket <= fdmax; master_socket++) {
 
             if (!FD_ISSET(master_socket, &rdset)) {
@@ -398,12 +399,12 @@ int runModBusTcpServerMulti(piksi_data_t *piksi_struct)
             }
 
             if (master_socket == server_socket) {
-                /* A client is asking a new connection */
+                // A client is asking a new connection 
                 socklen_t addrlen;
                 struct sockaddr_in clientaddr;
                 int newfd;
 
-                /* Handle new connections */
+                // Handle new connections 
                 addrlen = sizeof(clientaddr);
                 memset(&clientaddr, 0, sizeof(clientaddr));
                 newfd = accept(server_socket, (struct sockaddr *)&clientaddr, &addrlen);
@@ -413,11 +414,11 @@ int runModBusTcpServerMulti(piksi_data_t *piksi_struct)
                     FD_SET(newfd, &refset);
 
                     if (newfd > fdmax) {
-                        /* Keep track of the maximum */
+                        // Keep track of the maximum 
                         fdmax = newfd;
                     }
-                    printf("New connection from %s:%d on socket %d\n",
-                           inet_ntoa(clientaddr.sin_addr), clientaddr.sin_port, newfd);
+                    //printf("New connection from %s:%d on socket %d\n", inet_ntoa(clientaddr.sin_addr), clientaddr.sin_port, newfd);
+					slog(0, SLOG_INFO, "ModbusTCP: New connection from %s:%d on socket %d", inet_ntoa(clientaddr.sin_addr), clientaddr.sin_port, newfd);
                 }
             } else {
                 modbus_set_socket(ctx, master_socket);
@@ -426,12 +427,13 @@ int runModBusTcpServerMulti(piksi_data_t *piksi_struct)
 					updateRegistersFromStruct(piksi_struct, mb_mapping); // request received. populate registers from structure
                     modbus_reply(ctx, query, rc, mb_mapping);
                 } else if (rc == -1) {
-                    /* This example server in ended on connection closing or
-                     * any errors. */
-                    printf("Connection closed on socket %d\n", master_socket);
+                     // This example server in ended on connection closing or
+                     // any errors. 
+                    //printf("Connection closed on socket %d\n", master_socket);
+					slog(0, SLOG_INFO, "ModbusTCP: Connection closed on socket %d", master_socket);
                     close(master_socket);
 
-                    /* Remove from reference set */
+                    // Remove from reference set 
                     FD_CLR(master_socket, &refset);
 
                     if (master_socket == fdmax) {
@@ -441,17 +443,12 @@ int runModBusTcpServerMulti(piksi_data_t *piksi_struct)
             }
         }
     }
-
     return 0;
-	
 }
 
-
-
-
 void usage(char *prog_name) {
-  fprintf(stderr, "usage: %s [-p serial port] [ -b baud rate] \n", prog_name);
-  slog(0, SLOG_ERROR, "usage: %s [-p serial port] [ -b baud rate] \n", prog_name);
+  //fprintf(stderr, "usage: %s [-p serial port] [ -b baud rate] \n", prog_name);
+  slog(0, SLOG_ERROR, "usage: %s [-p serial port] [ -b baud rate] ", prog_name);
 }
 
 void setup_socket(struct sockaddr_in server)
@@ -460,7 +457,8 @@ void setup_socket(struct sockaddr_in server)
   socket_desc = socket(AF_INET , SOCK_STREAM | SOCK_NONBLOCK , 0); // changed it to be non-blocking sockets. unsure of the ramifications as things currently stand
   if (socket_desc == -1)
   {
-    fprintf(stderr, "Could not create socket\n");
+    //fprintf(stderr, "Could not create socket\n");
+	slog(0, SLOG_ERROR, "Could not create socket");
   }
 
   memset(&server, '0', sizeof(server));
@@ -468,10 +466,13 @@ void setup_socket(struct sockaddr_in server)
   server.sin_family = AF_INET;
   server.sin_port = htons(atoi(tcp_ip_port));
 
+  
   if (connect(socket_desc, (struct sockaddr *)&server , sizeof(server)) < 0)
   {
-    fprintf(stderr, "Connection error\n");
+    //fprintf(stderr, "Connection error\n");
+	slog(0, SLOG_ERROR, "Connection error");
   }
+  
 }
 
 void close_socket()
@@ -485,36 +486,36 @@ void setup_port()
 
   result = sp_set_baudrate(piksi_port, 115200);
   if (result != SP_OK) {
-    fprintf(stderr, "Cannot set port baud rate!\n");
-    slog(0, SLOG_ERROR, "Cannot set port baud rate!\n");
+    //fprintf(stderr, "Cannot set port baud rate!\n");
+    slog(0, SLOG_ERROR, "Cannot set port baud rate!");
     exit(EXIT_FAILURE);
   }
 
   result = sp_set_flowcontrol(piksi_port, SP_FLOWCONTROL_NONE);
   if (result != SP_OK) {
-    fprintf(stderr, "Cannot set flow control!\n");
-    slog(0, SLOG_ERROR, "Cannot set flow control!\n");
+    //fprintf(stderr, "Cannot set flow control!\n");
+    slog(0, SLOG_ERROR, "Cannot set flow control!");
     exit(EXIT_FAILURE);
   }
 
   result = sp_set_bits(piksi_port, 8);
   if (result != SP_OK) {
-    fprintf(stderr, "Cannot set data bits!\n");
-    slog(0, SLOG_ERROR, "Cannot set data bits!\n");
+    //fprintf(stderr, "Cannot set data bits!\n");
+    slog(0, SLOG_ERROR, "Cannot set data bits!");
     exit(EXIT_FAILURE);
   }
 
   result = sp_set_parity(piksi_port, SP_PARITY_NONE);
   if (result != SP_OK) {
-    fprintf(stderr, "Cannot set parity!\n");
-    slog(0, SLOG_ERROR, "Cannot set parity!\n");
+    //fprintf(stderr, "Cannot set parity!\n");
+    slog(0, SLOG_ERROR, "Cannot set parity!");
     exit(EXIT_FAILURE);
   }
 
   result = sp_set_stopbits(piksi_port, 1);
   if (result != SP_OK) {
-    fprintf(stderr, "Cannot set stop bits!\n");
-    slog(0, SLOG_ERROR, "Cannot set stop bits!\n");
+    //fprintf(stderr, "Cannot set stop bits!\n");
+    slog(0, SLOG_ERROR, "Cannot set stop bits!");
     exit(EXIT_FAILURE);
   }
 }
@@ -548,53 +549,63 @@ void sbp_setup_all()
   if (blnHeartbeatEnabled)  {
 	sbp_register_callback(&sbp_state, SBP_MSG_HEARTBEAT, &heartbeat_callback, (void*)CurrentData,
 						&heartbeat_callback_node);
+	slog(0, SLOG_INFO, "registering heartbeat_callback");
   }
 
   if (blnBasePosEnabled) {
 	sbp_register_callback(&sbp_state, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, (void*)CurrentData,
 						&base_pos_llh_callback_node);
+	slog(0, SLOG_INFO, "registering base_pos_llh_callback");
   }
 
   if (blnLLHPosEnabled) {
 	sbp_register_callback(&sbp_state, SBP_MSG_POS_LLH, &pos_llh_callback, (void*)CurrentData,
 						&pos_llh_callback_node);
+	slog(0, SLOG_INFO, "registering pos_llh_callback");
   }
 
   if (blnBaseNEDEnabled) {
 	sbp_register_callback(&sbp_state, SBP_MSG_BASELINE_NED, &baseline_ned_callback, (void*)CurrentData,
 						  &baseline_ned_callback_node);
+	slog(0, SLOG_INFO, "registering baseline_ned_callback");
   }
   if (blnVelNEDEnabled) {
 	sbp_register_callback(&sbp_state, SBP_MSG_VEL_NED, &vel_ned_callback, (void*)CurrentData,
 						  &vel_ned_callback_node);
+	slog(0, SLOG_INFO, "registering vel_ned_callback");
   }
 
   if (blnGPSTimeEnabled) {
 	sbp_register_callback(&sbp_state, SBP_MSG_GPS_TIME, &gps_time_callback, (void*)CurrentData,
 						&gps_time_callback_node);
-	fprintf(stdout, "registering gps_time_callback\n");
+	//fprintf(stdout, "registering gps_time_callback\n");
+	slog(0, SLOG_INFO, "registering gps_time_callback");
   }
 						
   if (blnUTCTimeEnabled) {
 	sbp_register_callback(&sbp_state, SBP_MSG_UTC_TIME, &utc_time_callback, (void*)CurrentData,
 						&utc_time_callback_node);
+	slog(0, SLOG_INFO, "registering utc_time_callback");
   }
 
   if (blnIMUEnabled) {
 	sbp_register_callback(&sbp_state, SBP_MSG_IMU_RAW, &imu_raw_callback, (void*)CurrentData,
 						  &imu_raw_callback_node);
+	slog(0, SLOG_INFO, "registering imu_raw_callback");
   }
 
   if (blnECEFEnabled) {
 	sbp_register_callback(&sbp_state, SBP_MSG_BASELINE_ECEF, &baseline_ecef_callback, (void*)CurrentData,
 						  &baseline_ecef_callback_node);
-	fprintf(stdout, "registering baseline_ecef_callback\n");
+	//fprintf(stdout, "registering baseline_ecef_callback\n");
+	slog(0, SLOG_INFO, "registering baseline_ecef_callback");
   }
 
   if (blnECEFEnabled) {
 	sbp_register_callback(&sbp_state, SBP_MSG_POS_ECEF, &pos_ecef_callback, (void*)CurrentData,
 						  &pos_ecef_callback_node);
-	fprintf(stdout, "registering pos_ecef_callback\n");
+	//fprintf(stdout, "registering pos_ecef_callback\n");
+	slog(0, SLOG_INFO, "registering pos_ecef_callback");
   }
 }
 
@@ -628,14 +639,14 @@ int main(int argc, char **argv)
   time_t tmLastHeartbeatOKMessage = time(NULL); // temp variable to output diagnosis messages every 5 seconds
   
   blnDebugToScreen = 1;
-//  slog_init("plc-gps-interface", "slog.cfg", 1, 1);
-  slog_init("plc-gps-interface", "slog.cfg", 1, 3, 1);
+  slog_init("plc-gps-interface", "slog.cfg", 1, 1);
+//  slog_init("plc-gps-interface", "slog.cfg", 1, 3, 1);
   slog(0, SLOG_INFO, "Opening logging file");
   
   
   int parpid = getpid(), childpid;
-  fprintf(stdout, "parent processID=%d\n", parpid);
-  slog(0, SLOG_INFO, "parent processID=%d\n", parpid);
+  //fprintf(stdout, "parent processID=%d\n", parpid);
+  slog(0, SLOG_INFO, "parent processID=%d", parpid);
   //piksi_data_t *CurrentData = (piksi_data_t *)mmap(NULL, sizeof(*CurrentData), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
   CurrentData = (piksi_data_t *)mmap(NULL, sizeof(*CurrentData), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
   piksi_data_setup(CurrentData);
@@ -650,31 +661,32 @@ int main(int argc, char **argv)
     switch (opt) {
       case 'm': // mode of communication - IP or serial
         blnEthernetComms = 0; // disables ethernet communicationsand enables serial communications
-        fprintf(stdout, "ethernet disabled. comms will be over serial.\n");
+        //fprintf(stdout, "ethernet disabled. comms will be over serial.\n");
+		slog(0, SLOG_INFO, "ethernet disabled. comms will be over serial.");
         break;
       case 'p': // obtain IP address or serial port depending on which is selected. default is ethernet
         
         if (blnEthernetComms) { // if communication method is ethernet
           tcp_ip_addr = (char *)calloc(strlen(optarg) + 1, sizeof(char));
           if (!tcp_ip_addr) {
-            fprintf(stderr, "Cannot allocate memory!\n");
-            slog(0, SLOG_ERROR, "Cannot allocate memory!\n");
+            //fprintf(stderr, "Cannot allocate memory!\n");
+            slog(0, SLOG_ERROR, "Cannot allocate memory!");
             exit(EXIT_FAILURE);
           }
           strcpy(tcp_ip_addr, optarg);
-          fprintf(stdout, "IP address set to \"%s\"\n", tcp_ip_addr);
-          slog(0, SLOG_INFO, "IP address set to \"%s\"\n", tcp_ip_addr);
+          //fprintf(stdout, "IP address set to \"%s\"\n", tcp_ip_addr);
+          slog(0, SLOG_INFO, "IP address set to \"%s\"", tcp_ip_addr);
         }
         else { //  communication method is serial
           serial_port_name = (char *)calloc(strlen(optarg) + 1, sizeof(char));
           if (!serial_port_name) {
-            fprintf(stderr, "Cannot allocate memory!\n");
-            slog(0, SLOG_ERROR, "Cannot allocate memory!\n");
+            //fprintf(stderr, "Cannot allocate memory!\n");
+            slog(0, SLOG_ERROR, "Cannot allocate memory!");
             exit(EXIT_FAILURE);
           }
           strcpy(serial_port_name, optarg);
-          fprintf(stdout, "serial port set to \"%s\"\n", serial_port_name);
-          slog(0, SLOG_INFO, "serial port set to \"%s\"\n", serial_port_name);
+          //fprintf(stdout, "serial port set to \"%s\"\n", serial_port_name);
+          slog(0, SLOG_INFO, "serial port set to \"%s\"", serial_port_name);
         }
         break;    
       // additional communication parameter. if IP comms then this represents IP port. If serial comms then this represents baud rate
@@ -683,13 +695,13 @@ int main(int argc, char **argv)
         if (blnEthernetComms) { // if communication method is ethernet
           tcp_ip_port = (char *)calloc(strlen(optarg) + 1, sizeof(char));
           if (!tcp_ip_port) {
-            fprintf(stderr, "Cannot allocate memory!\n");
-            slog(0, SLOG_ERROR, "Cannot allocate memory!\n");
+            //fprintf(stderr, "Cannot allocate memory!\n");
+            slog(0, SLOG_ERROR, "Cannot allocate memory!");
             exit(EXIT_FAILURE);
           }
           strcpy(tcp_ip_port, optarg);
-          fprintf(stdout, "IP port set to \"%s\"\n", tcp_ip_port);
-          slog(0, SLOG_INFO, "IP port set to \"%s\"\n", tcp_ip_port);
+          //fprintf(stdout, "IP port set to \"%s\"\n", tcp_ip_port);
+          slog(0, SLOG_INFO, "IP port set to \"%s\"", tcp_ip_port);
         }
         else { //  communication method is serial
           {
@@ -697,69 +709,68 @@ int main(int argc, char **argv)
             l=strtol(optarg, 0, 10);
             if ((!optarg) ||  (l <= 0))
             { 
-               fprintf(stderr, "invalid baud rate under option -b  %s - expecting a number\n", optarg?optarg:"");
-               slog(0, SLOG_ERROR, "invalid baud rate under option -b  %s - expecting a number\n", optarg?optarg:"");
+               //fprintf(stderr, "invalid baud rate under option -b  %s - expecting a number\n", optarg?optarg:"");
+               slog(0, SLOG_ERROR, "invalid baud rate under option -b  %s - expecting a number", optarg?optarg:"");
 
-               fprintf(stdout, "b\n");
                usage(argv[0]);
                exit(EXIT_FAILURE);
             }
             intBaudRate = (int) l;
 
-            fprintf(stdout, "baud rate set to %d\n\n", intBaudRate);
-            slog(0, SLOG_INFO, "baud rate set to %d\n\n", intBaudRate);
+            //fprintf(stdout, "baud rate set to %d\n\n", intBaudRate);
+            slog(0, SLOG_INFO, "baud rate set to %d", intBaudRate);
           }
         }
         break;
       case 'g': // if parameter is in existence, then disable GPS Time callback function
         blnGPSTimeEnabled = 0; // disable GPS Time callback function
-        fprintf(stdout, "GPS Time disabled\n");
-        slog(0, SLOG_INFO, "GPS Time disabled\n");
+        //fprintf(stdout, "GPS Time disabled\n");
+        slog(0, SLOG_INFO, "GPS Time disabled");
         break;
       case 'u': // if parameter is in existence, then disable UTC Time callback function
         blnUTCTimeEnabled = 0; // disable UTC Time callback function
-        fprintf(stdout, "UTC Time disabled\n");
-        slog(0, SLOG_INFO, "UTC Time disabled\n");
+        //fprintf(stdout, "UTC Time disabled\n");
+        slog(0, SLOG_INFO, "UTC Time disabled");
         break;
       case 'l': // if parameter is in existence, then disable LLH position callback function
         blnLLHPosEnabled = 0; // disable LLH position callback function
-        fprintf(stdout, "LLH position data collection disabled\n");
-        slog(0, SLOG_INFO, "LLH position data collection disabled\n");
+        //fprintf(stdout, "LLH position data collection disabled\n");
+        slog(0, SLOG_INFO, "LLH position data collection disabled");
         break;
       case 'f': // if parameter is in existence, then disable base position callback function
         blnBasePosEnabled = 0; // disable base position callback function
-        fprintf(stdout, "base position data collection disabled\n");
-        slog(0, SLOG_INFO, "base position data collection disabled\n");
+        //fprintf(stdout, "base position data collection disabled\n");
+        slog(0, SLOG_INFO, "base position data collection disabled");
         break;
       case 'i': // if parameter is in existence, then disable IMU callback function
         blnIMUEnabled = 0; // disable IMU callback function
-        fprintf(stdout, "IMU data collection disabled\n");
-        slog(0, SLOG_INFO, "IMU data collection disabled\n");
+        //fprintf(stdout, "IMU data collection disabled\n");
+        slog(0, SLOG_INFO, "IMU data collection disabled");
         break;
       case 'n': // if parameter is in existence, then disable baseline rover NED callback function
         blnBaseNEDEnabled = 0; // disable baseline rover NED callback function
-        fprintf(stdout, "Baseline NED Rover coordinate collection disabled\n");
-        slog(0, SLOG_INFO, "Baseline NED Rover coordinate collection disabled\n");
+        //fprintf(stdout, "Baseline NED Rover coordinate collection disabled\n");
+        slog(0, SLOG_INFO, "Baseline NED Rover coordinate collection disabled");
         break;
       case 'e': // if parameter is in existence, then disable all ECEF callback functions
         blnECEFEnabled = 0; // disable disable all ECEF callback functions
-        fprintf(stdout, "all ECEF coordinate collection disabled\n");
-        slog(0, SLOG_INFO, "all ECEF coordinate collection disabled\n");
+        //fprintf(stdout, "all ECEF coordinate collection disabled\n");
+        slog(0, SLOG_INFO, "all ECEF coordinate collection disabled");
         break;
       case 'v': // if parameter is in existence, then disable velocity rover NED callback function
         blnVelNEDEnabled = 0; // disable velocity rover NED callback function
-        fprintf(stdout, "NED velocity collection disabled\n");
-        slog(0, SLOG_INFO, "NED velocity collection disabled\n");
+        //fprintf(stdout, "NED velocity collection disabled\n");
+        slog(0, SLOG_INFO, "NED velocity collection disabled");
         break;
       case 'a': // if parameter is in existence, then disable heartbeat callback function
         blnHeartbeatEnabled = 0; // disable heartbeat callback function
-        fprintf(stdout, "heartbeat collection disabled\n");
-        slog(0, SLOG_INFO, "heartbeat collection disabled\n");
+        //fprintf(stdout, "heartbeat collection disabled\n");
+        slog(0, SLOG_INFO, "heartbeat collection disabled");
         break;
       case 'd': // if parameter is in existence, then send info and debug messages to screen
         blnDebugToScreen = 13; // enable debug to screen
-        fprintf(stdout, "info and debug messages enabled to screen\n");
-        slog(0, SLOG_INFO, "info and debug messages enabled to screen\n");
+        //fprintf(stdout, "info and debug messages enabled to screen\n");
+        slog(0, SLOG_INFO, "info and debug messages enabled to screen");
         break;
 //      case 'h':
 //        usage(argv[0]);
@@ -774,14 +785,14 @@ int main(int argc, char **argv)
     // NOTREACHED
   case 0: // ******************************** in the child process ********************************
     childpid = getpid();
-    fprintf(stdout, "child PID %d\n", childpid);
-    slog(0, SLOG_INFO, "child PID %d\n", childpid);
+    //fprintf(stdout, "child PID %d\n", childpid);
+    slog(0, SLOG_INFO, "ModbusTCP:child PID %d", childpid);
         
     //runModBusTcpServer(CurrentData);
     runModBusTcpServerMulti(CurrentData);
     
-    fprintf(stdout, "terminating child process PID %d\n", childpid);
-    slog(0, SLOG_INFO, "terminating child process PID %d\n", childpid);
+    //fprintf(stdout, "terminating child process PID %d\n", childpid);
+    slog(0, SLOG_INFO, "ModbusTCP: terminating child process PID %d", childpid);
         
     piksi_data_close(CurrentData);
     return EXIT_SUCCESS;
@@ -792,12 +803,14 @@ int main(int argc, char **argv)
   if (blnEthernetComms) {
     
     if (!tcp_ip_addr) {
-      fprintf(stderr, "Please supply the IP address of the SBP data stream!\n");
+      //fprintf(stderr, "Please supply the IP address of the SBP data stream!\n");
+      slog(0, SLOG_ERROR, "Please supply the IP address of the SBP data stream!");
       exit(EXIT_FAILURE);
     }
 
     if (!tcp_ip_port) {
-      fprintf(stderr, "Please supply the IP port of the SBP data stream!\n");
+      //fprintf(stderr, "Please supply the IP port of the SBP data stream!\n");
+      slog(0, SLOG_ERROR, "Please supply the IP port of the SBP data stream!");
       exit(EXIT_FAILURE);
     }
     
@@ -807,23 +820,23 @@ int main(int argc, char **argv)
 	  
   
     if (!serial_port_name) {
-      fprintf(stderr, "Please supply the serial port path where the Piksi is connected!\n");
-      slog(0, SLOG_ERROR, "Please supply the serial port path where the Piksi is connected!\n");
+      //fprintf(stderr, "Please supply the serial port path where the Piksi is connected!\n");
+      slog(0, SLOG_ERROR, "Please supply the serial port path where the Piksi is connected!");
           
       exit(EXIT_FAILURE);
     }
 
     result = sp_get_port_by_name(serial_port_name, &piksi_port);
     if (result != SP_OK) {
-      fprintf(stderr, "Cannot find provided serial port!\n");
-      slog(0, SLOG_ERROR, "Cannot find provided serial port!\n");
+      //fprintf(stderr, "Cannot find provided serial port!\n");
+      slog(0, SLOG_ERROR, "Cannot find provided serial port!");
       exit(EXIT_FAILURE);
     }
 
     result = sp_open(piksi_port, SP_MODE_READ);
     if (result != SP_OK) {
-      fprintf(stderr, "Cannot open %s for reading!\n", serial_port_name);
-      slog(0, SLOG_ERROR, "Cannot open %s for reading!\n", serial_port_name);
+      //fprintf(stderr, "Cannot open %s for reading!\n", serial_port_name);
+      slog(0, SLOG_ERROR, "Cannot open %s for reading!", serial_port_name);
       exit(EXIT_FAILURE);
     }
 
@@ -841,16 +854,16 @@ int main(int argc, char **argv)
       if ((blnHeartbeatEnabled) &&(tmCurrentTime - tmLastHeartbeat > HeartBeatTimeout) ) // heartbeat enabled and we haven't received a heartbeat in x seconds..
       {
 
-        slog(0, SLOG_INFO, "Heartbeat not detected in %ld seconds\n", (unsigned long)(tmCurrentTime - tmLastHeartbeat));
+        slog(0, SLOG_INFO, "Heartbeat not detected in %ld seconds", (unsigned long)(tmCurrentTime - tmLastHeartbeat));
         // fprintf(stderr, "Heartbeat not detected in %ld seconds\n", (unsigned long)(tmCurrentTime - tmLastHeartbeat));
 
         // if a heartbeat is not detected, its likely comms is lost to the GPS device. 
         // attempt to setup the socket again
-        slog(0, SLOG_INFO, "Attempt to reconnect socket\n");
+        slog(0, SLOG_INFO, "Attempt to reconnect socket");
         close_socket();
 		
 		setup_socket(server);
-        slog(0, SLOG_INFO, "Setup socket command issued.\n");
+        slog(0, SLOG_INFO, "Setup socket command issued.");
         sbp_setup_all();
         tmLastHeartbeat = time(NULL);
       }
@@ -858,7 +871,7 @@ int main(int argc, char **argv)
 	  {
          if (( tmCurrentTime - tmLastHeartbeatOKMessage > OKMessageInterval) && (tmCurrentTime - tmLastSuccessfulRead < OKMessageInterval))
 		 {
-            slog(2, SLOG_INFO, "Connection to GPS OK. Received a messages within the last %d seconds. so only showing every %d seconds\n", OKMessageInterval, OKMessageInterval);
+            slog(2, SLOG_INFO, "Connection to GPS OK. Received a messages within the last %d seconds. so only showing every %d seconds", OKMessageInterval, OKMessageInterval);
             // slog(2, SLOG_INFO, "baseline_ECEF. tow=%d, x=%d, y=%d, z=%d, accuracy=%d, n_sats=%d, flags=%d ", CurrentData->baseline_ECEF_data->tow, CurrentData->baseline_ECEF_data->x, 
 						// CurrentData->baseline_ECEF_data->y, CurrentData->baseline_ECEF_data->z, CurrentData->baseline_ECEF_data->accuracy, 
 						// CurrentData->baseline_ECEF_data->n_sats, CurrentData->baseline_ECEF_data->flags);
