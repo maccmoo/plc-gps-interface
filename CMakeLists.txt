@@ -11,11 +11,12 @@ add_executable(plc-gps-interface plc-gps-interface.c)
 target_link_libraries (plc-gps-interface sbp_callback_functions slog cJSON)
 
 find_package(PkgConfig)
-pkg_check_modules(LIBSERIALPORT libserialport)
-link_directories(${LIBSERIALPORT_LIBRARY_DIRS})
-include_directories(${LIBSERIALPORT_INCLUDE_DIRS})
+#pkg_check_modules(LIBSERIALPORT libserialport)
+#link_directories(${LIBSERIALPORT_LIBRARY_DIRS})
+#include_directories(${LIBSERIALPORT_INCLUDE_DIRS})
 
 link_directories("/usr/local/lib/")
 include_directories("/usr/local/include/")
 
-target_link_libraries(plc-gps-interface serialport sbp modbus slog)
+#target_link_libraries(plc-gps-interface serialport sbp modbus slog)
+target_link_libraries(plc-gps-interface sbp modbus slog)
