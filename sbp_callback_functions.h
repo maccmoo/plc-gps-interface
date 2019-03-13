@@ -14,6 +14,8 @@
  #include <libsbp/observation.h>
  #include <libsbp/navigation.h>
  #include <libsbp/imu.h>
+ #include <libsbp/piksi.h>
+ #include <libsbp/linux.h>
  #include <slog.h>
  // #include "cJSON.h"
  #include <time.h>
@@ -39,7 +41,10 @@ typedef struct {
   msg_heartbeat_t *heartbeat_data;
   msg_imu_raw_t *IMU_data;
   msg_utc_time_t *UTC_data;
-  
+  msg_log_t *log_data;
+  msg_device_monitor_t *device_monitor_data;
+  msg_linux_sys_state_t *linux_sys_data;
+  msg_age_corrections_t *correction_age_data;
   
 } piksi_data_t;
 
@@ -73,6 +78,15 @@ void imu_raw_callback(u16 sender_id, u8 len, u8 msg[], void *context);
 void baseline_ecef_callback(u16 sender_id, u8 len, u8 msg[], void *context);
 
 void pos_ecef_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+
+void log_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+
+void device_monitor_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+
+void linux_sys_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+
+void correction_age_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+
 
 
 

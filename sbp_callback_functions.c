@@ -4,22 +4,30 @@ int piksi_data_setup(piksi_data_t *piksidata)
 {
 
   // CurrentData is piksidata. one is used globally, the other passed by reference. should probably consolidate this!
-  piksi_data_t *CurrentData     = (piksi_data_t *)       mmap(NULL, sizeof(*CurrentData),                  PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0); 
-  piksidata->GPS_time_data      = (msg_gps_time_t *)     mmap(NULL, sizeof(piksidata->GPS_time_data),      PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
-  piksidata->baseline_NED_data  = (msg_baseline_ned_t *) mmap(NULL, sizeof(piksidata->baseline_NED_data),  PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
-  piksidata->LLH_data           = (msg_pos_llh_t *)      mmap(NULL, sizeof(piksidata->LLH_data),           PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
-  piksidata->NED_velocity_data  = (msg_vel_ned_t *)      mmap(NULL, sizeof(piksidata->NED_velocity_data),  PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
-  piksidata->IMU_data           = (msg_imu_raw_t *)      mmap(NULL, sizeof(piksidata->IMU_data),           PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
-  piksidata->ECEF_data          = (msg_pos_ecef_t *)     mmap(NULL, sizeof(piksidata->ECEF_data),          PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
-  piksidata->baseline_ECEF_data = (msg_baseline_ecef_t *)mmap(NULL, sizeof(piksidata->baseline_ECEF_data), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
-  piksidata->UTC_data           = (msg_utc_time_t *)     mmap(NULL, sizeof(piksidata->UTC_data),           PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksi_data_t *CurrentData     = (piksi_data_t *)          mmap(NULL, sizeof(*CurrentData),                   PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0); 
+  piksidata->GPS_time_data      = (msg_gps_time_t *)        mmap(NULL, sizeof(piksidata->GPS_time_data),       PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksidata->baseline_NED_data  = (msg_baseline_ned_t *)    mmap(NULL, sizeof(piksidata->baseline_NED_data),   PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksidata->LLH_data           = (msg_pos_llh_t *)         mmap(NULL, sizeof(piksidata->LLH_data),            PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksidata->NED_velocity_data  = (msg_vel_ned_t *)         mmap(NULL, sizeof(piksidata->NED_velocity_data),   PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksidata->IMU_data           = (msg_imu_raw_t *)         mmap(NULL, sizeof(piksidata->IMU_data),            PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksidata->ECEF_data          = (msg_pos_ecef_t *)        mmap(NULL, sizeof(piksidata->ECEF_data),           PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksidata->baseline_ECEF_data = (msg_baseline_ecef_t *)   mmap(NULL, sizeof(piksidata->baseline_ECEF_data),  PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksidata->UTC_data           = (msg_utc_time_t *)        mmap(NULL, sizeof(piksidata->UTC_data),            PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksidata->log_data           = (msg_log_t *)             mmap(NULL, sizeof(piksidata->log_data),            PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksidata->device_monitor_data= (msg_device_monitor_t *)  mmap(NULL, sizeof(piksidata->device_monitor_data), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksidata->linux_sys_data     = (msg_linux_sys_state_t *) mmap(NULL, sizeof(piksidata->linux_sys_data),      PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksidata->correction_age_data= (msg_age_corrections_t *) mmap(NULL, sizeof(piksidata->correction_age_data), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  
 
   slog(0, SLOG_INFO, "piksi_data_setup complete. totalsize = %d bytes", 
       (int)(
 	  sizeof (*piksidata) + sizeof(piksidata-> GPS_time_data) + 
 	  sizeof(piksidata-> baseline_NED_data) + sizeof(piksidata-> LLH_data) + 
 	  sizeof(piksidata-> NED_velocity_data) + sizeof(piksidata-> IMU_data) +
-	  sizeof(piksidata-> ECEF_data) + sizeof(piksidata-> baseline_ECEF_data)  + sizeof(piksidata-> UTC_data) 
+	  sizeof(piksidata-> ECEF_data) + sizeof(piksidata-> baseline_ECEF_data) + 
+	  sizeof(piksidata-> UTC_data) + sizeof(piksidata-> log_data)  + 
+	  sizeof(piksidata-> device_monitor_data) + sizeof(piksidata-> linux_sys_data) +
+	  sizeof(piksidata-> correction_age_data)
 	  ) );
 
   
@@ -37,6 +45,10 @@ int piksi_data_close(piksi_data_t *piksidata)
   munmap(piksidata->ECEF_data, sizeof(piksidata->ECEF_data));
   munmap(piksidata->baseline_ECEF_data, sizeof(piksidata->baseline_ECEF_data));
   munmap(piksidata->UTC_data, sizeof(piksidata->UTC_data));
+  munmap(piksidata->log_data, sizeof(piksidata->log_data));
+  munmap(piksidata->device_monitor_data, sizeof(piksidata->device_monitor_data));
+  munmap(piksidata->linux_sys_data, sizeof(piksidata->linux_sys_data));
+  munmap(piksidata->correction_age_data, sizeof(piksidata->correction_age_data));
 
   munmap(piksidata, sizeof(piksidata));
 
@@ -442,5 +454,84 @@ void pos_ecef_callback(u16 sender_id, u8 len, u8 msg[], void *context)
 
 }
 
+void log_callback(u16 sender_id, u8 len, u8 msg[], void *context)
+{
+  (void)sender_id, (void)len, (void)msg, (void)context;
+  piksi_data_t *piksi_data= (piksi_data_t*)context;
+  //char *strQuality = "Quality of time solution changed";
+  
+  msg_log_t *log_struct;
+
+  log_struct = (msg_log_t *) msg;
+  
+  memcpy( piksi_data-> log_data, log_struct, sizeof(*log_struct));
+
+  
+  switch (log_struct -> level)
+  {
+	  case 0:
+		slog(2, SLOG_LIVE, "EMERGENCY: %s", log_struct -> text);
+	  break;
+	  case 1:
+		slog(2, SLOG_LIVE, "ALERT: %s", log_struct -> text);
+	  break;
+	  case 2:
+		slog(2, SLOG_LIVE, "CRITICAL: %s", log_struct -> text);
+	  break;
+	  case 3:
+		slog(2, SLOG_LIVE, "ERROR: %s", log_struct -> text);
+	  break;
+	  case 4:
+		slog(2, SLOG_LIVE, "WARN: %s", log_struct -> text);
+	  break;
+	  case 5:
+		slog(2, SLOG_LIVE, "NOTICE: %s", log_struct -> text);
+	  break;
+	  // don't log info or debug messages. too much repetitive crap!
+	  // case 6:
+		// if(strstr(log_struct -> text, strQuality) == NULL) {
+			// slog(2, SLOG_LIVE, "INFO: %s", log_struct -> text);
+		// }
+	  // break;
+	  // case 7:
+		// slog(2, SLOG_LIVE, "DEBUG: %s", log_struct -> text);
+	  // break;
+  }
+	
+}
 
 
+void device_monitor_callback(u16 sender_id, u8 len, u8 msg[], void *context)
+{
+  (void)sender_id, (void)len, (void)msg, (void)context;
+  piksi_data_t *piksi_data= (piksi_data_t*)context;
+  
+  msg_device_monitor_t *device_monitor_struct;
+  device_monitor_struct = (msg_device_monitor_t *) msg;
+  memcpy( piksi_data-> device_monitor_data, device_monitor_struct, sizeof(*device_monitor_struct));
+  
+}
+
+
+void linux_sys_callback(u16 sender_id, u8 len, u8 msg[], void *context)
+{
+  (void)sender_id, (void)len, (void)msg, (void)context;
+  piksi_data_t *piksi_data= (piksi_data_t*)context;
+  
+  msg_linux_sys_state_t *linux_sys_data_struct;
+  linux_sys_data_struct = (msg_linux_sys_state_t *) msg;
+  memcpy( piksi_data-> linux_sys_data, linux_sys_data_struct, sizeof(*linux_sys_data_struct));
+  
+  slog(2, SLOG_LIVE, "total memory=%d", linux_sys_data_struct->mem_total);
+}
+
+void correction_age_callback(u16 sender_id, u8 len, u8 msg[], void *context)
+{
+  (void)sender_id, (void)len, (void)msg, (void)context;
+  piksi_data_t *piksi_data= (piksi_data_t*)context;
+  
+  msg_age_corrections_t *correction_age_data_struct;
+  correction_age_data_struct = (msg_age_corrections_t *) msg;
+  memcpy( piksi_data-> correction_age_data, correction_age_data_struct, sizeof(*correction_age_data_struct));
+
+}

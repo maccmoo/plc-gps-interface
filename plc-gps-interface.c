@@ -72,6 +72,21 @@
 #define reg_MSG_UTC_TIME_seconds 195
 #define reg_MSG_UTC_TIME_ns 196
 
+#define reg_MSG_DEVICE_MONITOR_dev_vin 198
+#define reg_MSG_DEVICE_MONITOR_cpu_vint 199
+#define reg_MSG_DEVICE_MONITOR_cpu_vaux 200
+#define reg_MSG_DEVICE_MONITOR_cpu_temperature 201
+#define reg_MSG_DEVICE_MONITOR_fe_temperature 202
+
+#define reg_MSG_LINUX_SYS_STATE_mem_total 203
+#define reg_MSG_LINUX_SYS_STATE_pcpu 204
+#define reg_MSG_LINUX_SYS_STATE_pmem 205
+#define reg_MSG_LINUX_SYS_STATE_procs_starting 206
+#define reg_MSG_LINUX_SYS_STATE_procs_stopping 207
+#define reg_MSG_LINUX_SYS_STATE_pid_count 208
+
+#define reg_SBP_MSG_AGE_CORRECTIONS_tow 209
+#define reg_SBP_MSG_AGE_CORRECTIONS_age 211
 
 
 // this macro is defined in libmodbus 3.14, but not in 3.06. 
@@ -100,13 +115,15 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/mman.h>
-#include <libserialport.h>
+//#include <libserialport.h>
 
 #include <libsbp/sbp.h>
 #include <libsbp/system.h>
 #include <libsbp/observation.h>
 #include <libsbp/navigation.h>
 #include <libsbp/imu.h>
+#include <libsbp/piksi.h>
+#include <libsbp/linux.h>
 #include <modbus/modbus.h>
 #include <modbus/modbus-tcp.h>
 
@@ -136,9 +153,14 @@ static sbp_msg_callbacks_node_t vel_ned_callback_node;
 static sbp_msg_callbacks_node_t gps_time_callback_node;
 static sbp_msg_callbacks_node_t utc_time_callback_node;
 static sbp_msg_callbacks_node_t imu_raw_callback_node;
-
 static sbp_msg_callbacks_node_t baseline_ecef_callback_node;
 static sbp_msg_callbacks_node_t pos_ecef_callback_node;
+static sbp_msg_callbacks_node_t log_callback_node;
+static sbp_msg_callbacks_node_t device_monitor_callback_node;
+static sbp_msg_callbacks_node_t linux_sys_callback_node;
+static sbp_msg_callbacks_node_t correction_age_callback_node;
+
+
 
 char blnGPSTimeEnabled;
 char blnIMUEnabled;
@@ -258,7 +280,24 @@ int updateRegistersFromStruct(piksi_data_t *piksi_struct, modbus_mapping_t *mb_m
   mb_mapping->tab_registers[reg_MSG_UTC_TIME_seconds] = piksi_struct->UTC_data->seconds;
   MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_UTC_TIME_ns, piksi_struct->UTC_data->ns);
 
+  // device monitor data
+  mb_mapping->tab_registers[reg_MSG_DEVICE_MONITOR_dev_vin] = piksi_struct->device_monitor_data->dev_vin;
+  mb_mapping->tab_registers[reg_MSG_DEVICE_MONITOR_cpu_vint] = piksi_struct->device_monitor_data->cpu_vint;
+  mb_mapping->tab_registers[reg_MSG_DEVICE_MONITOR_cpu_vaux] = piksi_struct->device_monitor_data->cpu_vaux;
+  mb_mapping->tab_registers[reg_MSG_DEVICE_MONITOR_cpu_temperature] = piksi_struct->device_monitor_data->cpu_temperature;
+  mb_mapping->tab_registers[reg_MSG_DEVICE_MONITOR_fe_temperature] = piksi_struct->device_monitor_data->fe_temperature;
+
+  mb_mapping->tab_registers[reg_MSG_LINUX_SYS_STATE_mem_total] = piksi_struct->linux_sys_data->mem_total;
+  mb_mapping->tab_registers[reg_MSG_LINUX_SYS_STATE_pcpu] = piksi_struct->linux_sys_data->pcpu;
+  mb_mapping->tab_registers[reg_MSG_LINUX_SYS_STATE_pmem] = piksi_struct->linux_sys_data->pmem;
+  mb_mapping->tab_registers[reg_MSG_LINUX_SYS_STATE_procs_starting] = piksi_struct->linux_sys_data->procs_starting;
+  mb_mapping->tab_registers[reg_MSG_LINUX_SYS_STATE_procs_stopping] = piksi_struct->linux_sys_data->procs_stopping;
+  mb_mapping->tab_registers[reg_MSG_LINUX_SYS_STATE_pid_count] = piksi_struct->linux_sys_data->pid_count;
   
+  // correction age
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_SBP_MSG_AGE_CORRECTIONS_tow, piksi_struct->correction_age_data->tow);
+  mb_mapping->tab_registers[reg_SBP_MSG_AGE_CORRECTIONS_age] = piksi_struct->correction_age_data->age;
+
   
   return 0;
 }
@@ -479,7 +518,7 @@ void close_socket()
 {
   close(socket_desc);
 }
-
+/*
 void setup_port()
 {
   int result;
@@ -519,7 +558,7 @@ void setup_port()
     exit(EXIT_FAILURE);
   }
 }
-
+*/
 s32 socket_read(u8 *buff, u32 n, void *context)
 {
   (void)context;
@@ -529,7 +568,7 @@ s32 socket_read(u8 *buff, u32 n, void *context)
   return result;
 }
 
-s32 piksi_port_read(u8 *buff, u32 n, void *context)
+/*s32 piksi_port_read(u8 *buff, u32 n, void *context)
 {
   (void)context;
   s32 result;
@@ -538,7 +577,7 @@ s32 piksi_port_read(u8 *buff, u32 n, void *context)
 
   return result;
 }
-
+*/
 void sbp_setup_all()
 {
 
@@ -607,6 +646,33 @@ void sbp_setup_all()
 	//fprintf(stdout, "registering pos_ecef_callback\n");
 	slog(0, SLOG_INFO, "registering pos_ecef_callback");
   }
+
+  if (blnECEFEnabled) {
+	sbp_register_callback(&sbp_state, SBP_MSG_LOG, &log_callback, (void*)CurrentData,
+						  &log_callback_node);
+	slog(0, SLOG_INFO, "registering log_callback_node");
+  }
+  
+  if (blnECEFEnabled) {
+	sbp_register_callback(&sbp_state, SBP_MSG_DEVICE_MONITOR, &device_monitor_callback, (void*)CurrentData,
+						  &device_monitor_callback_node);
+	slog(0, SLOG_INFO, "registering device_monitor_callback_node");
+  }
+  
+  if (blnECEFEnabled) {
+	sbp_register_callback(&sbp_state, SBP_MSG_LINUX_SYS_STATE, &linux_sys_callback, (void*)CurrentData,
+						  &linux_sys_callback_node);
+	slog(0, SLOG_INFO, "registering linux_sys_callback_node");
+  }
+  
+  if (blnECEFEnabled) {
+	sbp_register_callback(&sbp_state, SBP_MSG_AGE_CORRECTIONS, &correction_age_callback, (void*)CurrentData,
+						  &correction_age_callback_node);
+	slog(0, SLOG_INFO, "registering correction_age_callback_node");
+  }
+  
+  
+  
 }
 
 
@@ -614,7 +680,7 @@ void sbp_setup_all()
 int main(int argc, char **argv)
 {
   int opt;
-  int result = 0;
+//  int result = 0;
   int intBaudRate = 115200;
   char blnEthernetComms = 1;
   time_t tmCurrentTime;
@@ -816,7 +882,7 @@ int main(int argc, char **argv)
     
     setup_socket(server);
   }
-  else {
+/*  else {
 	  
   
     if (!serial_port_name) {
@@ -842,7 +908,7 @@ int main(int argc, char **argv)
 
     setup_port();
 }
-  
+*/  
   sbp_setup_all();
 
   
@@ -872,33 +938,23 @@ int main(int argc, char **argv)
          if (( tmCurrentTime - tmLastHeartbeatOKMessage > OKMessageInterval) && (tmCurrentTime - tmLastSuccessfulRead < OKMessageInterval))
 		 {
             slog(2, SLOG_INFO, "Connection to GPS OK. Received a messages within the last %d seconds. so only showing every %d seconds", OKMessageInterval, OKMessageInterval);
-            // slog(2, SLOG_INFO, "baseline_ECEF. tow=%d, x=%d, y=%d, z=%d, accuracy=%d, n_sats=%d, flags=%d ", CurrentData->baseline_ECEF_data->tow, CurrentData->baseline_ECEF_data->x, 
-						// CurrentData->baseline_ECEF_data->y, CurrentData->baseline_ECEF_data->z, CurrentData->baseline_ECEF_data->accuracy, 
-						// CurrentData->baseline_ECEF_data->n_sats, CurrentData->baseline_ECEF_data->flags);
-            // slog(2, SLOG_INFO, "POS_ECEF. tow=%d, x=%lf,x_whole=%d, x_decimal=%d, y=%lf, z=%lf, accuracy=%d, n_sats=%d, flags=%d ", CurrentData->ECEF_data->tow, 
-						// CurrentData->ECEF_data->x, (int)(CurrentData->ECEF_data->x),abs((int)(((CurrentData->ECEF_data->x)- (int)(CurrentData->ECEF_data->x)) *1000)),
-						// CurrentData->ECEF_data->y, CurrentData->ECEF_data->z, CurrentData->ECEF_data->accuracy, 
-						// CurrentData->ECEF_data->n_sats, CurrentData->ECEF_data->flags);
-			
-			
 			tmLastHeartbeatOKMessage = time(NULL);
 		 }
 	  }
       
-	  //fprintf(fLogFile, "Current time = %ld. Time since last heartbeat = %ld\n" , (unsigned long)(tmCurrentTime), (unsigned long)(tmCurrentTime - tmLastHeartbeat) );
 
       sbp_process(&sbp_state, &socket_read); // process requests from Piksi Multi over Ethernet
-
+      usleep(100); // sleep for a millisecond
 	  
     }
     close_socket();
   }  
-  else {
+/*  else {
     while(1) {
       sbp_process(&sbp_state, &piksi_port_read); // process requests from Piksi Multi over serial
     }
   }
-
+*/
 
   
   piksi_data_close(CurrentData);
