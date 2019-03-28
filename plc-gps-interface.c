@@ -88,6 +88,10 @@
 #define reg_SBP_MSG_AGE_CORRECTIONS_tow 209
 #define reg_SBP_MSG_AGE_CORRECTIONS_age 211
 
+#define reg_SBP_MSG_IMU_AUX_imu_type 212
+#define reg_SBP_MSG_IMU_AUX_temp 213
+#define reg_SBP_MSG_IMU_AUX_imu_conf 214
+
 
 // this macro is defined in libmodbus 3.14, but not in 3.06. 
 // As it is very useful, I will define it here with an ifndef which "should" not break if we upgrade to 3.14
@@ -159,6 +163,7 @@ static sbp_msg_callbacks_node_t log_callback_node;
 static sbp_msg_callbacks_node_t device_monitor_callback_node;
 static sbp_msg_callbacks_node_t linux_sys_callback_node;
 static sbp_msg_callbacks_node_t correction_age_callback_node;
+static sbp_msg_callbacks_node_t imu_aux_callback_node;
 
 
 
@@ -297,6 +302,11 @@ int updateRegistersFromStruct(piksi_data_t *piksi_struct, modbus_mapping_t *mb_m
   // correction age
   MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_SBP_MSG_AGE_CORRECTIONS_tow, piksi_struct->correction_age_data->tow);
   mb_mapping->tab_registers[reg_SBP_MSG_AGE_CORRECTIONS_age] = piksi_struct->correction_age_data->age;
+
+  //imu aux data
+  mb_mapping->tab_registers[reg_SBP_MSG_IMU_AUX_imu_type] = piksi_struct->IMU_AUX_data->imu_type;
+  mb_mapping->tab_registers[reg_SBP_MSG_IMU_AUX_temp] = piksi_struct->IMU_AUX_data->temp;
+  mb_mapping->tab_registers[reg_SBP_MSG_IMU_AUX_imu_conf] = piksi_struct->IMU_AUX_data->imu_conf;
 
   
   return 0;
@@ -670,6 +680,12 @@ void sbp_setup_all()
 						  &correction_age_callback_node);
 	slog(0, SLOG_INFO, "registering correction_age_callback_node");
   }
+  if (blnIMUEnabled) {
+	sbp_register_callback(&sbp_state, SBP_MSG_IMU_RAW, &imu_aux_callback, (void*)CurrentData,
+						  &imu_aux_callback_node);
+	slog(0, SLOG_INFO, "registering imu_aux_callback");
+  }
+
   
   
   

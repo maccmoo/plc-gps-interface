@@ -45,6 +45,7 @@ typedef struct {
   msg_device_monitor_t *device_monitor_data;
   msg_linux_sys_state_t *linux_sys_data;
   msg_age_corrections_t *correction_age_data;
+  msg_imu_aux_t *IMU_AUX_data;
   
 } piksi_data_t;
 
@@ -86,6 +87,8 @@ void device_monitor_callback(u16 sender_id, u8 len, u8 msg[], void *context);
 void linux_sys_callback(u16 sender_id, u8 len, u8 msg[], void *context);
 
 void correction_age_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+
+void imu_aux_callback(u16 sender_id, u8 len, u8 msg[], void *context);
 
 
 

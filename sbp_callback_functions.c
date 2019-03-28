@@ -17,8 +17,9 @@ int piksi_data_setup(piksi_data_t *piksidata)
   piksidata->device_monitor_data= (msg_device_monitor_t *)  mmap(NULL, sizeof(piksidata->device_monitor_data), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
   piksidata->linux_sys_data     = (msg_linux_sys_state_t *) mmap(NULL, sizeof(piksidata->linux_sys_data),      PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
   piksidata->correction_age_data= (msg_age_corrections_t *) mmap(NULL, sizeof(piksidata->correction_age_data), PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+  piksidata->IMU_AUX_data       = (msg_imu_aux_t *)         mmap(NULL, sizeof(piksidata->IMU_AUX_data),        PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
   
-
+  
   slog(0, SLOG_INFO, "piksi_data_setup complete. totalsize = %d bytes", 
       (int)(
 	  sizeof (*piksidata) + sizeof(piksidata-> GPS_time_data) + 
@@ -27,7 +28,7 @@ int piksi_data_setup(piksi_data_t *piksidata)
 	  sizeof(piksidata-> ECEF_data) + sizeof(piksidata-> baseline_ECEF_data) + 
 	  sizeof(piksidata-> UTC_data) + sizeof(piksidata-> log_data)  + 
 	  sizeof(piksidata-> device_monitor_data) + sizeof(piksidata-> linux_sys_data) +
-	  sizeof(piksidata-> correction_age_data)
+	  sizeof(piksidata-> correction_age_data) + sizeof(piksidata-> IMU_AUX_data)
 	  ) );
 
   
@@ -49,6 +50,7 @@ int piksi_data_close(piksi_data_t *piksidata)
   munmap(piksidata->device_monitor_data, sizeof(piksidata->device_monitor_data));
   munmap(piksidata->linux_sys_data, sizeof(piksidata->linux_sys_data));
   munmap(piksidata->correction_age_data, sizeof(piksidata->correction_age_data));
+  munmap(piksidata->IMU_AUX_data, sizeof(piksidata->IMU_AUX_data));
 
   munmap(piksidata, sizeof(piksidata));
 
@@ -535,3 +537,18 @@ void correction_age_callback(u16 sender_id, u8 len, u8 msg[], void *context)
   memcpy( piksi_data-> correction_age_data, correction_age_data_struct, sizeof(*correction_age_data_struct));
 
 }
+
+void imu_aux_callback(u16 sender_id, u8 len, u8 msg[], void *context)
+{
+  (void)sender_id, (void)len, (void)msg, (void)context;
+
+  piksi_data_t *piksi_data= (piksi_data_t*)context;
+
+  msg_imu_aux_t *imu_aux_struct;
+  imu_aux_struct = (msg_imu_aux_t *) msg; // cast msg pointer to appropriate type and save for later use
+  memcpy( piksi_data-> IMU_AUX_data, imu_aux_struct, sizeof(*imu_aux_struct));
+
+  tmLastSuccessfulRead = time(NULL);
+}
+
+
