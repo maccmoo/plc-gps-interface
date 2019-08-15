@@ -16,12 +16,18 @@
 
 #define reg_MSG_POS_LLH_tow 118
 #define reg_MSG_POS_LLH_lat 120
+#define reg_MSG_POS_LLH_lat_decimal 122
 #define reg_MSG_POS_LLH_lon 124
+#define reg_MSG_POS_LLH_lon_decimal 126
 #define reg_MSG_POS_LLH_height 128
+#define reg_MSG_POS_LLH_height_decimal 130
 #define reg_MSG_POS_LLH_h_accuracy 132
 #define reg_MSG_POS_LLH_v_accuracy 133
 #define reg_MSG_POS_LLH_n_sats 134
 #define reg_MSG_POS_LLH_flags 135
+
+
+
 
 #define reg_MSG_VEL_NED_tow 136
 #define reg_MSG_VEL_NED_n 138
@@ -91,6 +97,8 @@
 #define reg_SBP_MSG_IMU_AUX_imu_type 212
 #define reg_SBP_MSG_IMU_AUX_temp 213
 #define reg_SBP_MSG_IMU_AUX_imu_conf 214
+
+
 
 
 // this macro is defined in libmodbus 3.14, but not in 3.06. 
@@ -213,18 +221,17 @@ int updateRegistersFromStruct(piksi_data_t *piksi_struct, modbus_mapping_t *mb_m
 
   // LLH data
   MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_POS_LLH_tow, piksi_struct->LLH_data->tow);
-  mb_mapping->tab_registers[reg_MSG_POS_LLH_lat] = 0; // temporarily set to 0 till 64 bit float support is implemented
-  mb_mapping->tab_registers[reg_MSG_POS_LLH_lat+1] = 0; 
-  mb_mapping->tab_registers[reg_MSG_POS_LLH_lat+2] = 0; 
-  mb_mapping->tab_registers[reg_MSG_POS_LLH_lat+3] = 0; 
-  mb_mapping->tab_registers[reg_MSG_POS_LLH_lon] = 0; // temporarily set to 0 till 64 bit float support is implemented
-  mb_mapping->tab_registers[reg_MSG_POS_LLH_lon+1] = 0; 
-  mb_mapping->tab_registers[reg_MSG_POS_LLH_lon+2] = 0; 
-  mb_mapping->tab_registers[reg_MSG_POS_LLH_lon+3] = 0; 
-  mb_mapping->tab_registers[reg_MSG_POS_LLH_height] = 0; // temporarily set to 0 till 64 bit float support is implemented
-  mb_mapping->tab_registers[reg_MSG_POS_LLH_height+1] = 0; 
-  mb_mapping->tab_registers[reg_MSG_POS_LLH_height+2] = 0; 
-  mb_mapping->tab_registers[reg_MSG_POS_LLH_height+3] = 0; 
+  //mb_mapping->tab_registers[reg_MSG_POS_LLH_lat]=0;
+  //mb_mapping->tab_registers[reg_MSG_POS_LLH_lat + 1]=0;
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_POS_LLH_lat, (int)(CurrentData->LLH_data->lat)); // output whole number as 32 bit integer 
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_POS_LLH_lat_decimal, abs((int)(((CurrentData->LLH_data->lat)- (int)(CurrentData->LLH_data->lat)) *10000000)) ); // output remainder as integer to 4dp. accuracy
+  
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_POS_LLH_lon, (int)(CurrentData->LLH_data->lon)); // output whole number as 32 bit integer 
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_POS_LLH_lon_decimal, abs((int)(((CurrentData->LLH_data->lon)- (int)(CurrentData->LLH_data->lon)) *10000000)) ); // output remainder as integer to 4dp. accuracy
+  
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_POS_LLH_height, (int)(CurrentData->LLH_data->height)); // output whole number as 32 bit integer 
+  MODBUS_SET_INT32_TO_INT16( mb_mapping -> tab_registers, reg_MSG_POS_LLH_height_decimal,  abs((int)(((CurrentData->LLH_data->height)- (int)(CurrentData->LLH_data->height)) * 10000000)) ); // output remainder as integer to 4dp. accuracy
+  
   mb_mapping->tab_registers[reg_MSG_POS_LLH_h_accuracy] = piksi_struct->LLH_data->h_accuracy;
   mb_mapping->tab_registers[reg_MSG_POS_LLH_v_accuracy] = piksi_struct->LLH_data->v_accuracy;
   mb_mapping->tab_registers[reg_MSG_POS_LLH_n_sats] = piksi_struct->LLH_data->n_sats;
