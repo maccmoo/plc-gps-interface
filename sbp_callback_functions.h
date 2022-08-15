@@ -54,13 +54,25 @@ int piksi_data_close(piksi_data_t *piksidata);
 FILE * fp;
 FILE *fLogFile;
 char blnDebugToScreen;
-time_t tmLastHeartbeat;
-time_t tmLastSuccessfulRead;
+time_t tmLastHeartbeat1;
+time_t tmLastHeartbeat2;
+time_t tmLastHeartbeat3;
+time_t tmLastHeartbeat4;
+time_t tmLastHeartbeat5;
+time_t tmLastSuccessfulRead1;
+time_t tmLastSuccessfulRead2;
+time_t tmLastSuccessfulRead3;
+time_t tmLastSuccessfulRead4;
+time_t tmLastSuccessfulRead5;
 
 
 
 
-void heartbeat_callback(u16 sender_id, u8 len, u8 msg[], void *context);
+void heartbeat_callback1(u16 sender_id, u8 len, u8 msg[], void *context);
+void heartbeat_callback2(u16 sender_id, u8 len, u8 msg[], void *context);
+void heartbeat_callback3(u16 sender_id, u8 len, u8 msg[], void *context);
+void heartbeat_callback4(u16 sender_id, u8 len, u8 msg[], void *context);
+void heartbeat_callback5(u16 sender_id, u8 len, u8 msg[], void *context);
 
 void pos_llh_callback(u16 sender_id, u8 len, u8 msg[], void *context);
 
