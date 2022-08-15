@@ -598,92 +598,92 @@ void sbp_setup_all(sbp_state_t *sbp_state, piksi_data_t *CurrentDataNode)
   // register callback functions for each sbp message we wish to process
   
   if (blnHeartbeatEnabled)  {
-	sbp_register_callback(sbp_state, SBP_MSG_HEARTBEAT, &heartbeat_callback, (void*)CurrentDataNode,
+	sbp_payload_callback_register(sbp_state, SBP_MSG_HEARTBEAT, &heartbeat_callback, (void*)CurrentDataNode,
 						&heartbeat_callback_node);
 	slog(0, SLOG_INFO, "registering heartbeat_callback");
   }
 
   if (blnBasePosEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, (void*)CurrentDataNode,
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, (void*)CurrentDataNode,
 						&base_pos_llh_callback_node);
 	slog(0, SLOG_INFO, "registering base_pos_llh_callback");
   }
 
   if (blnLLHPosEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_POS_LLH, &pos_llh_callback, (void*)CurrentDataNode,
+	sbp_payload_callback_register(sbp_state, SBP_MSG_POS_LLH, &pos_llh_callback, (void*)CurrentDataNode,
 						&pos_llh_callback_node);
 	slog(0, SLOG_INFO, "registering pos_llh_callback");
   }
 
   if (blnBaseNEDEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASELINE_NED, &baseline_ned_callback, (void*)CurrentDataNode,
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASELINE_NED, &baseline_ned_callback, (void*)CurrentDataNode,
 						  &baseline_ned_callback_node);
 	slog(0, SLOG_INFO, "registering baseline_ned_callback");
   }
   if (blnVelNEDEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_VEL_NED, &vel_ned_callback, (void*)CurrentDataNode,
+	sbp_payload_callback_register(sbp_state, SBP_MSG_VEL_NED, &vel_ned_callback, (void*)CurrentDataNode,
 						  &vel_ned_callback_node);
 	slog(0, SLOG_INFO, "registering vel_ned_callback");
   }
 
   if (blnGPSTimeEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_GPS_TIME, &gps_time_callback, (void*)CurrentDataNode,
+	sbp_payload_callback_register(sbp_state, SBP_MSG_GPS_TIME, &gps_time_callback, (void*)CurrentDataNode,
 						&gps_time_callback_node);
 	//fprintf(stdout, "registering gps_time_callback\n");
 	slog(0, SLOG_INFO, "registering gps_time_callback");
   }
 						
   if (blnUTCTimeEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_UTC_TIME, &utc_time_callback, (void*)CurrentDataNode,
+	sbp_payload_callback_register(sbp_state, SBP_MSG_UTC_TIME, &utc_time_callback, (void*)CurrentDataNode,
 						&utc_time_callback_node);
 	slog(0, SLOG_INFO, "registering utc_time_callback");
   }
 
   if (blnIMUEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_IMU_RAW, &imu_raw_callback, (void*)CurrentDataNode,
+	sbp_payload_callback_register(sbp_state, SBP_MSG_IMU_RAW, &imu_raw_callback, (void*)CurrentDataNode,
 						  &imu_raw_callback_node);
 	slog(0, SLOG_INFO, "registering imu_raw_callback");
   }
 
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASELINE_ECEF, &baseline_ecef_callback, (void*)CurrentDataNode,
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASELINE_ECEF, &baseline_ecef_callback, (void*)CurrentDataNode,
 						  &baseline_ecef_callback_node);
 	//fprintf(stdout, "registering baseline_ecef_callback\n");
 	slog(0, SLOG_INFO, "registering baseline_ecef_callback");
   }
 
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_POS_ECEF, &pos_ecef_callback, (void*)CurrentDataNode,
+	sbp_payload_callback_register(sbp_state, SBP_MSG_POS_ECEF, &pos_ecef_callback, (void*)CurrentDataNode,
 						  &pos_ecef_callback_node);
 	//fprintf(stdout, "registering pos_ecef_callback\n");
 	slog(0, SLOG_INFO, "registering pos_ecef_callback");
   }
 
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_LOG, &log_callback, (void*)CurrentDataNode,
+	sbp_payload_callback_register(sbp_state, SBP_MSG_LOG, &log_callback, (void*)CurrentDataNode,
 						  &log_callback_node);
 	slog(0, SLOG_INFO, "registering log_callback_node");
   }
   
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_DEVICE_MONITOR, &device_monitor_callback, (void*)CurrentDataNode,
+	sbp_payload_callback_register(sbp_state, SBP_MSG_DEVICE_MONITOR, &device_monitor_callback, (void*)CurrentDataNode,
 						  &device_monitor_callback_node);
 	slog(0, SLOG_INFO, "registering device_monitor_callback_node");
   }
   
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_LINUX_SYS_STATE, &linux_sys_callback, (void*)CurrentDataNode,
+	sbp_payload_callback_register(sbp_state, SBP_MSG_LINUX_SYS_STATE, &linux_sys_callback, (void*)CurrentDataNode,
 						  &linux_sys_callback_node);
 	slog(0, SLOG_INFO, "registering linux_sys_callback_node");
   }
   
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_AGE_CORRECTIONS, &correction_age_callback, (void*)CurrentDataNode,
+	sbp_payload_callback_register(sbp_state, SBP_MSG_AGE_CORRECTIONS, &correction_age_callback, (void*)CurrentDataNode,
 						  &correction_age_callback_node);
 	slog(0, SLOG_INFO, "registering correction_age_callback_node");
   }
   if (blnIMUEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_IMU_RAW, &imu_aux_callback, (void*)CurrentDataNode,
+	sbp_payload_callback_register(sbp_state, SBP_MSG_IMU_RAW, &imu_aux_callback, (void*)CurrentDataNode,
 						  &imu_aux_callback_node);
 	slog(0, SLOG_INFO, "registering imu_aux_callback");
   }
@@ -699,63 +699,63 @@ void sbp_setup_all_struct1(sbp_state_t *sbp_state, piksi_data_t *CurrentDataNode
   // register callback functions for each sbp message we wish to process
   
   if (blnHeartbeatEnabled)  {
-	sbp_register_callback(sbp_state, SBP_MSG_HEARTBEAT, &heartbeat_callback1, (void*)CurrentDataNode, &(CallbacksNode1.heartbeat_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_HEARTBEAT, &heartbeat_callback1, (void*)CurrentDataNode, &(CallbacksNode1.heartbeat_callback_node) );
 	// slog(0, SLOG_INFO, "registering heartbeat_callback 1");
   }
   if (blnBasePosEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, (void*)CurrentDataNode, &(CallbacksNode1.base_pos_llh_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, (void*)CurrentDataNode, &(CallbacksNode1.base_pos_llh_callback_node) );
 	// slog(0, SLOG_INFO, "registering base_pos_llh_callback 1");
   }
   if (blnLLHPosEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_POS_LLH, &pos_llh_callback, (void*)CurrentDataNode, &(CallbacksNode1.pos_llh_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_POS_LLH, &pos_llh_callback, (void*)CurrentDataNode, &(CallbacksNode1.pos_llh_callback_node) );
 	// slog(0, SLOG_INFO, "registering pos_llh_callback 1");
   }
   if (blnBaseNEDEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASELINE_NED, &baseline_ned_callback, (void*)CurrentDataNode, &(CallbacksNode1.baseline_ned_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASELINE_NED, &baseline_ned_callback, (void*)CurrentDataNode, &(CallbacksNode1.baseline_ned_callback_node) );
 	// slog(0, SLOG_INFO, "registering baseline_ned_callback 1");
   }
   if (blnVelNEDEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_VEL_NED, &vel_ned_callback, (void*)CurrentDataNode, &(CallbacksNode1.vel_ned_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_VEL_NED, &vel_ned_callback, (void*)CurrentDataNode, &(CallbacksNode1.vel_ned_callback_node) );
 	// slog(0, SLOG_INFO, "registering vel_ned_callback 1");
   }
   if (blnGPSTimeEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_GPS_TIME, &gps_time_callback, (void*)CurrentDataNode, &(CallbacksNode1.gps_time_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_GPS_TIME, &gps_time_callback, (void*)CurrentDataNode, &(CallbacksNode1.gps_time_callback_node) );
 	// slog(0, SLOG_INFO, "registering gps_time_callback 1");
   }
   if (blnUTCTimeEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_UTC_TIME, &utc_time_callback, (void*)CurrentDataNode, &(CallbacksNode1.utc_time_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_UTC_TIME, &utc_time_callback, (void*)CurrentDataNode, &(CallbacksNode1.utc_time_callback_node) );
 	// slog(0, SLOG_INFO, "registering utc_time_callback 1");
   }
   if (blnIMUEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_IMU_RAW, &imu_raw_callback, (void*)CurrentDataNode, &(CallbacksNode1.imu_raw_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_IMU_RAW, &imu_raw_callback, (void*)CurrentDataNode, &(CallbacksNode1.imu_raw_callback_node) );
 	// slog(0, SLOG_INFO, "registering imu_raw_callback 1");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASELINE_ECEF, &baseline_ecef_callback, (void*)CurrentDataNode, &(CallbacksNode1.baseline_ecef_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASELINE_ECEF, &baseline_ecef_callback, (void*)CurrentDataNode, &(CallbacksNode1.baseline_ecef_callback_node) );
 	// slog(0, SLOG_INFO, "registering baseline_ecef_callback 1");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_POS_ECEF, &pos_ecef_callback, (void*)CurrentDataNode, &(CallbacksNode1.pos_ecef_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_POS_ECEF, &pos_ecef_callback, (void*)CurrentDataNode, &(CallbacksNode1.pos_ecef_callback_node) );
 	// slog(0, SLOG_INFO, "registering pos_ecef_callback 1");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_LOG, &log_callback, (void*)CurrentDataNode, &(CallbacksNode1.log_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_LOG, &log_callback, (void*)CurrentDataNode, &(CallbacksNode1.log_callback_node) );
 	// slog(0, SLOG_INFO, "registering log_callback_node 1");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_DEVICE_MONITOR, &device_monitor_callback, (void*)CurrentDataNode, &(CallbacksNode1.device_monitor_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_DEVICE_MONITOR, &device_monitor_callback, (void*)CurrentDataNode, &(CallbacksNode1.device_monitor_callback_node) );
 	// slog(0, SLOG_INFO, "registering device_monitor_callback_node 1");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_LINUX_SYS_STATE, &linux_sys_callback, (void*)CurrentDataNode, &(CallbacksNode1.linux_sys_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_LINUX_SYS_STATE, &linux_sys_callback, (void*)CurrentDataNode, &(CallbacksNode1.linux_sys_callback_node) );
 	// slog(0, SLOG_INFO, "registering linux_sys_callback_node 1");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_AGE_CORRECTIONS, &correction_age_callback, (void*)CurrentDataNode, &(CallbacksNode1.correction_age_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_AGE_CORRECTIONS, &correction_age_callback, (void*)CurrentDataNode, &(CallbacksNode1.correction_age_callback_node) );
 	// slog(0, SLOG_INFO, "registering correction_age_callback_node 1");
   }
   if (blnIMUEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_IMU_RAW, &imu_aux_callback, (void*)CurrentDataNode, &(CallbacksNode1.imu_aux_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_IMU_RAW, &imu_aux_callback, (void*)CurrentDataNode, &(CallbacksNode1.imu_aux_callback_node) );
 	// slog(0, SLOG_INFO, "registering imu_aux_callback 1");
   }
 }
@@ -768,63 +768,63 @@ void sbp_setup_all_struct2(sbp_state_t *sbp_state, piksi_data_t *CurrentDataNode
   // register callback functions for each sbp message we wish to process
   
   if (blnHeartbeatEnabled)  {
-	sbp_register_callback(sbp_state, SBP_MSG_HEARTBEAT, &heartbeat_callback2, (void*)CurrentDataNode, &(CallbacksNode2.heartbeat_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_HEARTBEAT, &heartbeat_callback2, (void*)CurrentDataNode, &(CallbacksNode2.heartbeat_callback_node) );
 	// slog(0, SLOG_INFO, "registering heartbeat_callback 2");
   }
   if (blnBasePosEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, (void*)CurrentDataNode, &(CallbacksNode2.base_pos_llh_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, (void*)CurrentDataNode, &(CallbacksNode2.base_pos_llh_callback_node) );
 	// slog(0, SLOG_INFO, "registering base_pos_llh_callback 2");
   }
   if (blnLLHPosEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_POS_LLH, &pos_llh_callback, (void*)CurrentDataNode, &(CallbacksNode2.pos_llh_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_POS_LLH, &pos_llh_callback, (void*)CurrentDataNode, &(CallbacksNode2.pos_llh_callback_node) );
 	// slog(0, SLOG_INFO, "registering pos_llh_callback 2");
   }
   if (blnBaseNEDEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASELINE_NED, &baseline_ned_callback, (void*)CurrentDataNode, &(CallbacksNode2.baseline_ned_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASELINE_NED, &baseline_ned_callback, (void*)CurrentDataNode, &(CallbacksNode2.baseline_ned_callback_node) );
 	// slog(0, SLOG_INFO, "registering baseline_ned_callback 2");
   }
   if (blnVelNEDEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_VEL_NED, &vel_ned_callback, (void*)CurrentDataNode, &(CallbacksNode2.vel_ned_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_VEL_NED, &vel_ned_callback, (void*)CurrentDataNode, &(CallbacksNode2.vel_ned_callback_node) );
 	// slog(0, SLOG_INFO, "registering vel_ned_callback 2");
   }
   if (blnGPSTimeEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_GPS_TIME, &gps_time_callback, (void*)CurrentDataNode, &(CallbacksNode2.gps_time_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_GPS_TIME, &gps_time_callback, (void*)CurrentDataNode, &(CallbacksNode2.gps_time_callback_node) );
 	// slog(0, SLOG_INFO, "registering gps_time_callback 2");
   }
   if (blnUTCTimeEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_UTC_TIME, &utc_time_callback, (void*)CurrentDataNode, &(CallbacksNode2.utc_time_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_UTC_TIME, &utc_time_callback, (void*)CurrentDataNode, &(CallbacksNode2.utc_time_callback_node) );
 	// slog(0, SLOG_INFO, "registering utc_time_callback 2");
   }
   if (blnIMUEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_IMU_RAW, &imu_raw_callback, (void*)CurrentDataNode, &(CallbacksNode2.imu_raw_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_IMU_RAW, &imu_raw_callback, (void*)CurrentDataNode, &(CallbacksNode2.imu_raw_callback_node) );
 	// slog(0, SLOG_INFO, "registering imu_raw_callback 2");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASELINE_ECEF, &baseline_ecef_callback, (void*)CurrentDataNode, &(CallbacksNode2.baseline_ecef_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASELINE_ECEF, &baseline_ecef_callback, (void*)CurrentDataNode, &(CallbacksNode2.baseline_ecef_callback_node) );
 	// slog(0, SLOG_INFO, "registering baseline_ecef_callback 2");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_POS_ECEF, &pos_ecef_callback, (void*)CurrentDataNode, &(CallbacksNode2.pos_ecef_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_POS_ECEF, &pos_ecef_callback, (void*)CurrentDataNode, &(CallbacksNode2.pos_ecef_callback_node) );
 	// slog(0, SLOG_INFO, "registering pos_ecef_callback 2");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_LOG, &log_callback, (void*)CurrentDataNode, &(CallbacksNode2.log_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_LOG, &log_callback, (void*)CurrentDataNode, &(CallbacksNode2.log_callback_node) );
 	// slog(0, SLOG_INFO, "registering log_callback_node 2");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_DEVICE_MONITOR, &device_monitor_callback, (void*)CurrentDataNode, &(CallbacksNode2.device_monitor_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_DEVICE_MONITOR, &device_monitor_callback, (void*)CurrentDataNode, &(CallbacksNode2.device_monitor_callback_node) );
 	// slog(0, SLOG_INFO, "registering device_monitor_callback_node 2");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_LINUX_SYS_STATE, &linux_sys_callback, (void*)CurrentDataNode, &(CallbacksNode2.linux_sys_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_LINUX_SYS_STATE, &linux_sys_callback, (void*)CurrentDataNode, &(CallbacksNode2.linux_sys_callback_node) );
 	// slog(0, SLOG_INFO, "registering linux_sys_callback_node 2");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_AGE_CORRECTIONS, &correction_age_callback, (void*)CurrentDataNode, &(CallbacksNode2.correction_age_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_AGE_CORRECTIONS, &correction_age_callback, (void*)CurrentDataNode, &(CallbacksNode2.correction_age_callback_node) );
 	// slog(0, SLOG_INFO, "registering correction_age_callback_node 2");
   }
   if (blnIMUEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_IMU_RAW, &imu_aux_callback, (void*)CurrentDataNode, &(CallbacksNode2.imu_aux_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_IMU_RAW, &imu_aux_callback, (void*)CurrentDataNode, &(CallbacksNode2.imu_aux_callback_node) );
 	// slog(0, SLOG_INFO, "registering imu_aux_callback 2");
   }
 }
@@ -837,63 +837,63 @@ void sbp_setup_all_struct3(sbp_state_t *sbp_state, piksi_data_t *CurrentDataNode
   // register callback functions for each sbp message we wish to process
   
   if (blnHeartbeatEnabled)  {
-	sbp_register_callback(sbp_state, SBP_MSG_HEARTBEAT, &heartbeat_callback3, (void*)CurrentDataNode, &(CallbacksNode3.heartbeat_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_HEARTBEAT, &heartbeat_callback3, (void*)CurrentDataNode, &(CallbacksNode3.heartbeat_callback_node) );
 	// slog(0, SLOG_INFO, "registering heartbeat_callback 3");
   }
   if (blnBasePosEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, (void*)CurrentDataNode, &(CallbacksNode3.base_pos_llh_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, (void*)CurrentDataNode, &(CallbacksNode3.base_pos_llh_callback_node) );
 	// slog(0, SLOG_INFO, "registering base_pos_llh_callback 3");
   }
   if (blnLLHPosEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_POS_LLH, &pos_llh_callback, (void*)CurrentDataNode, &(CallbacksNode3.pos_llh_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_POS_LLH, &pos_llh_callback, (void*)CurrentDataNode, &(CallbacksNode3.pos_llh_callback_node) );
 	// slog(0, SLOG_INFO, "registering pos_llh_callback 3");
   }
   if (blnBaseNEDEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASELINE_NED, &baseline_ned_callback, (void*)CurrentDataNode, &(CallbacksNode3.baseline_ned_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASELINE_NED, &baseline_ned_callback, (void*)CurrentDataNode, &(CallbacksNode3.baseline_ned_callback_node) );
 	// slog(0, SLOG_INFO, "registering baseline_ned_callback 3");
   }
   if (blnVelNEDEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_VEL_NED, &vel_ned_callback, (void*)CurrentDataNode, &(CallbacksNode3.vel_ned_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_VEL_NED, &vel_ned_callback, (void*)CurrentDataNode, &(CallbacksNode3.vel_ned_callback_node) );
 	// slog(0, SLOG_INFO, "registering vel_ned_callback 3");
   }
   if (blnGPSTimeEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_GPS_TIME, &gps_time_callback, (void*)CurrentDataNode, &(CallbacksNode3.gps_time_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_GPS_TIME, &gps_time_callback, (void*)CurrentDataNode, &(CallbacksNode3.gps_time_callback_node) );
 	// slog(0, SLOG_INFO, "registering gps_time_callback 3");
   }
   if (blnUTCTimeEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_UTC_TIME, &utc_time_callback, (void*)CurrentDataNode, &(CallbacksNode3.utc_time_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_UTC_TIME, &utc_time_callback, (void*)CurrentDataNode, &(CallbacksNode3.utc_time_callback_node) );
 	// slog(0, SLOG_INFO, "registering utc_time_callback 3");
   }
   if (blnIMUEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_IMU_RAW, &imu_raw_callback, (void*)CurrentDataNode, &(CallbacksNode3.imu_raw_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_IMU_RAW, &imu_raw_callback, (void*)CurrentDataNode, &(CallbacksNode3.imu_raw_callback_node) );
 	// slog(0, SLOG_INFO, "registering imu_raw_callback 3");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASELINE_ECEF, &baseline_ecef_callback, (void*)CurrentDataNode, &(CallbacksNode3.baseline_ecef_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASELINE_ECEF, &baseline_ecef_callback, (void*)CurrentDataNode, &(CallbacksNode3.baseline_ecef_callback_node) );
 	// slog(0, SLOG_INFO, "registering baseline_ecef_callback 3");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_POS_ECEF, &pos_ecef_callback, (void*)CurrentDataNode, &(CallbacksNode3.pos_ecef_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_POS_ECEF, &pos_ecef_callback, (void*)CurrentDataNode, &(CallbacksNode3.pos_ecef_callback_node) );
 	// slog(0, SLOG_INFO, "registering pos_ecef_callback 3");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_LOG, &log_callback, (void*)CurrentDataNode, &(CallbacksNode3.log_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_LOG, &log_callback, (void*)CurrentDataNode, &(CallbacksNode3.log_callback_node) );
 	// slog(0, SLOG_INFO, "registering log_callback_node 3");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_DEVICE_MONITOR, &device_monitor_callback, (void*)CurrentDataNode, &(CallbacksNode3.device_monitor_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_DEVICE_MONITOR, &device_monitor_callback, (void*)CurrentDataNode, &(CallbacksNode3.device_monitor_callback_node) );
 	// slog(0, SLOG_INFO, "registering device_monitor_callback_node 3");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_LINUX_SYS_STATE, &linux_sys_callback, (void*)CurrentDataNode, &(CallbacksNode3.linux_sys_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_LINUX_SYS_STATE, &linux_sys_callback, (void*)CurrentDataNode, &(CallbacksNode3.linux_sys_callback_node) );
 	// slog(0, SLOG_INFO, "registering linux_sys_callback_node 3");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_AGE_CORRECTIONS, &correction_age_callback, (void*)CurrentDataNode, &(CallbacksNode3.correction_age_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_AGE_CORRECTIONS, &correction_age_callback, (void*)CurrentDataNode, &(CallbacksNode3.correction_age_callback_node) );
 	// slog(0, SLOG_INFO, "registering correction_age_callback_node 3");
   }
   if (blnIMUEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_IMU_RAW, &imu_aux_callback, (void*)CurrentDataNode, &(CallbacksNode3.imu_aux_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_IMU_RAW, &imu_aux_callback, (void*)CurrentDataNode, &(CallbacksNode3.imu_aux_callback_node) );
 	// slog(0, SLOG_INFO, "registering imu_aux_callback 3");
   }
 }
@@ -906,63 +906,63 @@ void sbp_setup_all_struct4(sbp_state_t *sbp_state, piksi_data_t *CurrentDataNode
   // register callback functions for each sbp message we wish to process
   
   if (blnHeartbeatEnabled)  {
-	sbp_register_callback(sbp_state, SBP_MSG_HEARTBEAT, &heartbeat_callback4, (void*)CurrentDataNode, &(CallbacksNode4.heartbeat_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_HEARTBEAT, &heartbeat_callback4, (void*)CurrentDataNode, &(CallbacksNode4.heartbeat_callback_node) );
 	// slog(0, SLOG_INFO, "registering heartbeat_callback 4");
   }
   if (blnBasePosEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, (void*)CurrentDataNode, &(CallbacksNode4.base_pos_llh_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, (void*)CurrentDataNode, &(CallbacksNode4.base_pos_llh_callback_node) );
 	// slog(0, SLOG_INFO, "registering base_pos_llh_callback 4");
   }
   if (blnLLHPosEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_POS_LLH, &pos_llh_callback, (void*)CurrentDataNode, &(CallbacksNode4.pos_llh_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_POS_LLH, &pos_llh_callback, (void*)CurrentDataNode, &(CallbacksNode4.pos_llh_callback_node) );
 	// slog(0, SLOG_INFO, "registering pos_llh_callback 4");
   }
   if (blnBaseNEDEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASELINE_NED, &baseline_ned_callback, (void*)CurrentDataNode, &(CallbacksNode4.baseline_ned_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASELINE_NED, &baseline_ned_callback, (void*)CurrentDataNode, &(CallbacksNode4.baseline_ned_callback_node) );
 	// slog(0, SLOG_INFO, "registering baseline_ned_callback 4");
   }
   if (blnVelNEDEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_VEL_NED, &vel_ned_callback, (void*)CurrentDataNode, &(CallbacksNode4.vel_ned_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_VEL_NED, &vel_ned_callback, (void*)CurrentDataNode, &(CallbacksNode4.vel_ned_callback_node) );
 	// slog(0, SLOG_INFO, "registering vel_ned_callback 4");
   }
   if (blnGPSTimeEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_GPS_TIME, &gps_time_callback, (void*)CurrentDataNode, &(CallbacksNode4.gps_time_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_GPS_TIME, &gps_time_callback, (void*)CurrentDataNode, &(CallbacksNode4.gps_time_callback_node) );
 	// slog(0, SLOG_INFO, "registering gps_time_callback 4");
   }
   if (blnUTCTimeEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_UTC_TIME, &utc_time_callback, (void*)CurrentDataNode, &(CallbacksNode4.utc_time_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_UTC_TIME, &utc_time_callback, (void*)CurrentDataNode, &(CallbacksNode4.utc_time_callback_node) );
 	// slog(0, SLOG_INFO, "registering utc_time_callback 4");
   }
   if (blnIMUEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_IMU_RAW, &imu_raw_callback, (void*)CurrentDataNode, &(CallbacksNode4.imu_raw_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_IMU_RAW, &imu_raw_callback, (void*)CurrentDataNode, &(CallbacksNode4.imu_raw_callback_node) );
 	// slog(0, SLOG_INFO, "registering imu_raw_callback 4");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASELINE_ECEF, &baseline_ecef_callback, (void*)CurrentDataNode, &(CallbacksNode4.baseline_ecef_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASELINE_ECEF, &baseline_ecef_callback, (void*)CurrentDataNode, &(CallbacksNode4.baseline_ecef_callback_node) );
 	// slog(0, SLOG_INFO, "registering baseline_ecef_callback 4");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_POS_ECEF, &pos_ecef_callback, (void*)CurrentDataNode, &(CallbacksNode4.pos_ecef_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_POS_ECEF, &pos_ecef_callback, (void*)CurrentDataNode, &(CallbacksNode4.pos_ecef_callback_node) );
 	// slog(0, SLOG_INFO, "registering pos_ecef_callback 4");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_LOG, &log_callback, (void*)CurrentDataNode, &(CallbacksNode4.log_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_LOG, &log_callback, (void*)CurrentDataNode, &(CallbacksNode4.log_callback_node) );
 	// slog(0, SLOG_INFO, "registering log_callback_node 4");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_DEVICE_MONITOR, &device_monitor_callback, (void*)CurrentDataNode, &(CallbacksNode4.device_monitor_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_DEVICE_MONITOR, &device_monitor_callback, (void*)CurrentDataNode, &(CallbacksNode4.device_monitor_callback_node) );
 	// slog(0, SLOG_INFO, "registering device_monitor_callback_node 4");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_LINUX_SYS_STATE, &linux_sys_callback, (void*)CurrentDataNode, &(CallbacksNode4.linux_sys_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_LINUX_SYS_STATE, &linux_sys_callback, (void*)CurrentDataNode, &(CallbacksNode4.linux_sys_callback_node) );
 	// slog(0, SLOG_INFO, "registering linux_sys_callback_node 4");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_AGE_CORRECTIONS, &correction_age_callback, (void*)CurrentDataNode, &(CallbacksNode4.correction_age_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_AGE_CORRECTIONS, &correction_age_callback, (void*)CurrentDataNode, &(CallbacksNode4.correction_age_callback_node) );
 	// slog(0, SLOG_INFO, "registering correction_age_callback_node 4");
   }
   if (blnIMUEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_IMU_RAW, &imu_aux_callback, (void*)CurrentDataNode, &(CallbacksNode4.imu_aux_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_IMU_RAW, &imu_aux_callback, (void*)CurrentDataNode, &(CallbacksNode4.imu_aux_callback_node) );
 	// slog(0, SLOG_INFO, "registering imu_aux_callback 4");
   }
 }
@@ -975,63 +975,63 @@ void sbp_setup_all_struct5(sbp_state_t *sbp_state, piksi_data_t *CurrentDataNode
   // register callback functions for each sbp message we wish to process
   
   if (blnHeartbeatEnabled)  {
-	sbp_register_callback(sbp_state, SBP_MSG_HEARTBEAT, &heartbeat_callback5, (void*)CurrentDataNode, &(CallbacksNode5.heartbeat_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_HEARTBEAT, &heartbeat_callback5, (void*)CurrentDataNode, &(CallbacksNode5.heartbeat_callback_node) );
 	// slog(0, SLOG_INFO, "registering heartbeat_callback 5");
   }
   if (blnBasePosEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, (void*)CurrentDataNode, &(CallbacksNode5.base_pos_llh_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, (void*)CurrentDataNode, &(CallbacksNode5.base_pos_llh_callback_node) );
 	// slog(0, SLOG_INFO, "registering base_pos_llh_callback 5");
   }
   if (blnLLHPosEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_POS_LLH, &pos_llh_callback, (void*)CurrentDataNode, &(CallbacksNode5.pos_llh_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_POS_LLH, &pos_llh_callback, (void*)CurrentDataNode, &(CallbacksNode5.pos_llh_callback_node) );
 	// slog(0, SLOG_INFO, "registering pos_llh_callback 5");
   }
   if (blnBaseNEDEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASELINE_NED, &baseline_ned_callback, (void*)CurrentDataNode, &(CallbacksNode5.baseline_ned_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASELINE_NED, &baseline_ned_callback, (void*)CurrentDataNode, &(CallbacksNode5.baseline_ned_callback_node) );
 	// slog(0, SLOG_INFO, "registering baseline_ned_callback 5");
   }
   if (blnVelNEDEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_VEL_NED, &vel_ned_callback, (void*)CurrentDataNode, &(CallbacksNode5.vel_ned_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_VEL_NED, &vel_ned_callback, (void*)CurrentDataNode, &(CallbacksNode5.vel_ned_callback_node) );
 	// slog(0, SLOG_INFO, "registering vel_ned_callback 5");
   }
   if (blnGPSTimeEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_GPS_TIME, &gps_time_callback, (void*)CurrentDataNode, &(CallbacksNode5.gps_time_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_GPS_TIME, &gps_time_callback, (void*)CurrentDataNode, &(CallbacksNode5.gps_time_callback_node) );
 	// slog(0, SLOG_INFO, "registering gps_time_callback 5");
   }
   if (blnUTCTimeEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_UTC_TIME, &utc_time_callback, (void*)CurrentDataNode, &(CallbacksNode5.utc_time_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_UTC_TIME, &utc_time_callback, (void*)CurrentDataNode, &(CallbacksNode5.utc_time_callback_node) );
 	// slog(0, SLOG_INFO, "registering utc_time_callback 5");
   }
   if (blnIMUEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_IMU_RAW, &imu_raw_callback, (void*)CurrentDataNode, &(CallbacksNode5.imu_raw_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_IMU_RAW, &imu_raw_callback, (void*)CurrentDataNode, &(CallbacksNode5.imu_raw_callback_node) );
 	// slog(0, SLOG_INFO, "registering imu_raw_callback 5");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASELINE_ECEF, &baseline_ecef_callback, (void*)CurrentDataNode, &(CallbacksNode5.baseline_ecef_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASELINE_ECEF, &baseline_ecef_callback, (void*)CurrentDataNode, &(CallbacksNode5.baseline_ecef_callback_node) );
 	// slog(0, SLOG_INFO, "registering baseline_ecef_callback 5");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_POS_ECEF, &pos_ecef_callback, (void*)CurrentDataNode, &(CallbacksNode5.pos_ecef_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_POS_ECEF, &pos_ecef_callback, (void*)CurrentDataNode, &(CallbacksNode5.pos_ecef_callback_node) );
 	// slog(0, SLOG_INFO, "registering pos_ecef_callback 5");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_LOG, &log_callback, (void*)CurrentDataNode, &(CallbacksNode5.log_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_LOG, &log_callback, (void*)CurrentDataNode, &(CallbacksNode5.log_callback_node) );
 	// slog(0, SLOG_INFO, "registering log_callback_node 5");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_DEVICE_MONITOR, &device_monitor_callback, (void*)CurrentDataNode, &(CallbacksNode5.device_monitor_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_DEVICE_MONITOR, &device_monitor_callback, (void*)CurrentDataNode, &(CallbacksNode5.device_monitor_callback_node) );
 	// slog(0, SLOG_INFO, "registering device_monitor_callback_node 5");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_LINUX_SYS_STATE, &linux_sys_callback, (void*)CurrentDataNode, &(CallbacksNode5.linux_sys_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_LINUX_SYS_STATE, &linux_sys_callback, (void*)CurrentDataNode, &(CallbacksNode5.linux_sys_callback_node) );
 	// slog(0, SLOG_INFO, "registering linux_sys_callback_node 5");
   }
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_AGE_CORRECTIONS, &correction_age_callback, (void*)CurrentDataNode, &(CallbacksNode5.correction_age_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_AGE_CORRECTIONS, &correction_age_callback, (void*)CurrentDataNode, &(CallbacksNode5.correction_age_callback_node) );
 	// slog(0, SLOG_INFO, "registering correction_age_callback_node 5");
   }
   if (blnIMUEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_IMU_RAW, &imu_aux_callback, (void*)CurrentDataNode, &(CallbacksNode5.imu_aux_callback_node) );
+	sbp_payload_callback_register(sbp_state, SBP_MSG_IMU_RAW, &imu_aux_callback, (void*)CurrentDataNode, &(CallbacksNode5.imu_aux_callback_node) );
 	// slog(0, SLOG_INFO, "registering imu_aux_callback 5");
   }
 }
@@ -1046,75 +1046,75 @@ void sbp_setup_all_generic(sbp_state_t *sbp_state, sbp_callbacks *callbacksNode,
   // register callback functions for each sbp message we wish to process
   
   if (blnHeartbeatEnabled)  {
-	sbp_register_callback(sbp_state, SBP_MSG_HEARTBEAT, &heartbeat_callback, (void*)CurrentDataNode, callbacksNode->heartbeat_callback_node);
+	sbp_payload_callback_register(sbp_state, SBP_MSG_HEARTBEAT, &heartbeat_callback, (void*)CurrentDataNode, callbacksNode->heartbeat_callback_node);
 	slog(0, SLOG_INFO, "registering heartbeat_callback");
   }
 
   if (blnBasePosEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, (void*)CurrentDataNode, callbacksNode->base_pos_llh_callback_node);
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASE_POS_LLH, &base_pos_llh_callback, (void*)CurrentDataNode, callbacksNode->base_pos_llh_callback_node);
 	slog(0, SLOG_INFO, "registering base_pos_llh_callback");
   }
 
   if (blnLLHPosEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_POS_LLH, &pos_llh_callback, (void*)CurrentDataNode, callbacksNode->pos_llh_callback_node);
+	sbp_payload_callback_register(sbp_state, SBP_MSG_POS_LLH, &pos_llh_callback, (void*)CurrentDataNode, callbacksNode->pos_llh_callback_node);
 	slog(0, SLOG_INFO, "registering pos_llh_callback");
   }
 
   if (blnBaseNEDEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASELINE_NED,&baseline_ned_callback, (void*)CurrentDataNode, callbacksNode->baseline_ned_callback_node);
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASELINE_NED,&baseline_ned_callback, (void*)CurrentDataNode, callbacksNode->baseline_ned_callback_node);
 	slog(0, SLOG_INFO, "registering baseline_ned_callback");
   }
   if (blnVelNEDEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_VEL_NED, &vel_ned_callback, (void*)CurrentDataNode, callbacksNode->vel_ned_callback_node);
+	sbp_payload_callback_register(sbp_state, SBP_MSG_VEL_NED, &vel_ned_callback, (void*)CurrentDataNode, callbacksNode->vel_ned_callback_node);
 	slog(0, SLOG_INFO, "registering vel_ned_callback");
   }
 
   if (blnGPSTimeEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_GPS_TIME, &gps_time_callback, (void*)CurrentDataNode, callbacksNode->gps_time_callback_node);
+	sbp_payload_callback_register(sbp_state, SBP_MSG_GPS_TIME, &gps_time_callback, (void*)CurrentDataNode, callbacksNode->gps_time_callback_node);
 	slog(0, SLOG_INFO, "registering gps_time_callback");
   }
 						
   if (blnUTCTimeEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_UTC_TIME, &utc_time_callback, (void*)CurrentDataNode, callbacksNode->utc_time_callback_node);
+	sbp_payload_callback_register(sbp_state, SBP_MSG_UTC_TIME, &utc_time_callback, (void*)CurrentDataNode, callbacksNode->utc_time_callback_node);
 	slog(0, SLOG_INFO, "registering utc_time_callback");
   }
 
   if (blnIMUEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_IMU_RAW, &imu_raw_callback, (void*)CurrentDataNode, callbacksNode->imu_raw_callback_node);
+	sbp_payload_callback_register(sbp_state, SBP_MSG_IMU_RAW, &imu_raw_callback, (void*)CurrentDataNode, callbacksNode->imu_raw_callback_node);
 	slog(0, SLOG_INFO, "registering imu_raw_callback");
   }
 
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_BASELINE_ECEF, &baseline_ecef_callback, (void*)CurrentDataNode, callbacksNode->baseline_ecef_callback_node);
+	sbp_payload_callback_register(sbp_state, SBP_MSG_BASELINE_ECEF, &baseline_ecef_callback, (void*)CurrentDataNode, callbacksNode->baseline_ecef_callback_node);
 	slog(0, SLOG_INFO, "registering baseline_ecef_callback");
   }
 
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_POS_ECEF, &pos_ecef_callback, (void*)CurrentDataNode, callbacksNode->pos_ecef_callback_node);
+	sbp_payload_callback_register(sbp_state, SBP_MSG_POS_ECEF, &pos_ecef_callback, (void*)CurrentDataNode, callbacksNode->pos_ecef_callback_node);
 	slog(0, SLOG_INFO, "registering pos_ecef_callback");
   }
 
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_LOG, &log_callback, (void*)CurrentDataNode, callbacksNode->log_callback_node);
+	sbp_payload_callback_register(sbp_state, SBP_MSG_LOG, &log_callback, (void*)CurrentDataNode, callbacksNode->log_callback_node);
 	slog(0, SLOG_INFO, "registering log_callback_node");
   }
   
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_DEVICE_MONITOR, &device_monitor_callback, (void*)CurrentDataNode, callbacksNode->device_monitor_callback_node);
+	sbp_payload_callback_register(sbp_state, SBP_MSG_DEVICE_MONITOR, &device_monitor_callback, (void*)CurrentDataNode, callbacksNode->device_monitor_callback_node);
 	slog(0, SLOG_INFO, "registering device_monitor_callback_node");
   }
   
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_LINUX_SYS_STATE, &linux_sys_callback, (void*)CurrentDataNode, callbacksNode->linux_sys_callback_node);
+	sbp_payload_callback_register(sbp_state, SBP_MSG_LINUX_SYS_STATE, &linux_sys_callback, (void*)CurrentDataNode, callbacksNode->linux_sys_callback_node);
 	slog(0, SLOG_INFO, "registering linux_sys_callback_node");
   }
   
   if (blnECEFEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_AGE_CORRECTIONS, &correction_age_callback, (void*)CurrentDataNode, callbacksNode->correction_age_callback_node);
+	sbp_payload_callback_register(sbp_state, SBP_MSG_AGE_CORRECTIONS, &correction_age_callback, (void*)CurrentDataNode, callbacksNode->correction_age_callback_node);
 	slog(0, SLOG_INFO, "registering correction_age_callback_node");
   }
   if (blnIMUEnabled) {
-	sbp_register_callback(sbp_state, SBP_MSG_IMU_RAW, &imu_aux_callback, (void*)CurrentDataNode, callbacksNode->imu_aux_callback_node);
+	sbp_payload_callback_register(sbp_state, SBP_MSG_IMU_RAW, &imu_aux_callback, (void*)CurrentDataNode, callbacksNode->imu_aux_callback_node);
 	slog(0, SLOG_INFO, "registering imu_aux_callback");
   }
 }
