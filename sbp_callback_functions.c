@@ -1,5 +1,21 @@
 #include "sbp_callback_functions.h"
 
+
+FILE * fp;
+FILE *fLogFile;
+char blnDebugToScreen;
+time_t tmLastHeartbeat1;
+time_t tmLastHeartbeat2;
+time_t tmLastHeartbeat3;
+time_t tmLastHeartbeat4;
+time_t tmLastHeartbeat5;
+time_t tmLastSuccessfulRead1;
+time_t tmLastSuccessfulRead2;
+time_t tmLastSuccessfulRead3;
+time_t tmLastSuccessfulRead4;
+time_t tmLastSuccessfulRead5;
+
+
 int piksi_data_setup(piksi_data_t *piksidata)
 {
 
@@ -394,22 +410,22 @@ void log_callback(u16 sender_id, u8 len, u8 msg[], void *context)
   switch (log_struct -> level)
   {
 	  case 0:
-		slog(2, SLOG_LIVE, "EMERGENCY: %s", log_struct -> text);
+		slog_note("EMERGENCY: %s", log_struct -> text);
 	  break;
 	  case 1:
-		slog(2, SLOG_LIVE, "ALERT: %s", log_struct -> text);
+		slog_note("ALERT: %s", log_struct -> text);
 	  break;
 	  case 2:
-		slog(2, SLOG_LIVE, "CRITICAL: %s", log_struct -> text);
+		slog_note("CRITICAL: %s", log_struct -> text);
 	  break;
 	  case 3:
-		slog(2, SLOG_LIVE, "ERROR: %s", log_struct -> text);
+		slog_note("ERROR: %s", log_struct -> text);
 	  break;
 	  case 4:
-		slog(2, SLOG_LIVE, "WARN: %s", log_struct -> text);
+		slog_note("WARN: %s", log_struct -> text);
 	  break;
 	  case 5:
-		slog(2, SLOG_LIVE, "NOTICE: %s", log_struct -> text);
+		slog_note("NOTICE: %s", log_struct -> text);
 	  break;
 	  // don't log info or debug messages. too much repetitive crap!
 	  // case 6:
@@ -446,7 +462,7 @@ void linux_sys_callback(u16 sender_id, u8 len, u8 msg[], void *context)
   linux_sys_data_struct = (msg_linux_sys_state_t *) msg;
   memcpy( piksi_data-> linux_sys_data, linux_sys_data_struct, sizeof(*linux_sys_data_struct));
   
-  slog(2, SLOG_LIVE, "total memory=%d", linux_sys_data_struct->mem_total);
+  slog_note("total memory=%d", linux_sys_data_struct->mem_total);
 }
 
 void correction_age_callback(u16 sender_id, u8 len, u8 msg[], void *context)

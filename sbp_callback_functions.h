@@ -17,7 +17,7 @@
  #include <libsbp/piksi.h>
  #include <libsbp/linux.h>
  #include <slog.h>
- // #include "cJSON.h"
+ #include "cJSON.h"
  #include <time.h>
 
 typedef struct {
@@ -51,22 +51,19 @@ typedef struct {
 
 int piksi_data_setup(piksi_data_t *piksidata);
 int piksi_data_close(piksi_data_t *piksidata);
-FILE * fp;
-FILE *fLogFile;
-char blnDebugToScreen;
-time_t tmLastHeartbeat1;
-time_t tmLastHeartbeat2;
-time_t tmLastHeartbeat3;
-time_t tmLastHeartbeat4;
-time_t tmLastHeartbeat5;
-time_t tmLastSuccessfulRead1;
-time_t tmLastSuccessfulRead2;
-time_t tmLastSuccessfulRead3;
-time_t tmLastSuccessfulRead4;
-time_t tmLastSuccessfulRead5;
-
-
-
+extern FILE * fp;
+extern FILE *fLogFile;
+extern char blnDebugToScreen;
+extern time_t tmLastHeartbeat1;
+extern time_t tmLastHeartbeat2;
+extern time_t tmLastHeartbeat3;
+extern time_t tmLastHeartbeat4;
+extern time_t tmLastHeartbeat5;
+extern time_t tmLastSuccessfulRead1;
+extern time_t tmLastSuccessfulRead2;
+extern time_t tmLastSuccessfulRead3;
+extern time_t tmLastSuccessfulRead4;
+extern time_t tmLastSuccessfulRead5;
 
 void heartbeat_callback1(u16 sender_id, u8 len, u8 msg[], void *context);
 void heartbeat_callback2(u16 sender_id, u8 len, u8 msg[], void *context);

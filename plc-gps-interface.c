@@ -165,11 +165,11 @@ int socketDescNode2 =- 1;
 int socketDescNode3 =- 1;
 int socketDescNode4 =- 1;
 int socketDescNode5 =- 1;
-const char *strNode1IPAddress = "10.44.32.12";
-const char *strNode2IPAddress = "10.44.32.13";
-const char *strNode3IPAddress = "10.44.32.14";
-const char *strNode4IPAddress = "10.44.32.15";
-const char *strNode5IPAddress = "10.44.32.16";
+const char *strNode1IPAddress = "192.168.1.11";
+const char *strNode2IPAddress = "192.168.1.12";
+const char *strNode3IPAddress = "192.168.1.7";
+const char *strNode4IPAddress = "192.168.1.15";
+const char *strNode5IPAddress = "192.168.1.16";
 const int intNode1Port = 55555;
 const int intNode2Port = 55555;
 const int intNode3Port = 55555;
@@ -1159,7 +1159,7 @@ int main(int argc, char **argv)
   time_t tmLastHeartbeatOKMessage5 = time(NULL); // temp variable to output diagnosis messages every 5 seconds
   
   blnDebugToScreen = 1;
-  slog_init("plc-gps-interface", "slog.cfg", 1, 1);
+  slog_init("slog.cfg", 0xffff, 1);
   slog(0, SLOG_INFO, "Opening logging file");
   
   int parpid = getpid(), childpid;
